@@ -11,9 +11,18 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.10",
+    "@trpc/client": "^11.7.1",
+    "@trpc/next": "^11.7.1",
+    "@trpc/react-query": "^11.7.1",
+    "@trpc/server": "^11.7.1",
+    "fp-ts": "^2.16.11",
+    "io-ts": "^2.2.22",
     "next": "16.0.3",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "superjson": "^2.2.5",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
