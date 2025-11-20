@@ -4,8 +4,8 @@ import type {
   ScenarioId,
   UserId,
   UserLevel,
-} from '~/domain/types/common';
-import type { Message } from 'postcss';
+  Message,
+} from '~/domain/types';
 
 export type Conversation = {
   readonly id: ConversationId;

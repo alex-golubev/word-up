@@ -1,4 +1,4 @@
-import type { ConversationId, MessageId, MessageRole } from '~/domain/types/common';
+import type { ConversationId, MessageId, MessageRole } from '~/domain/types';
 
 export type Message = {
   readonly id: MessageId;

@@ -12,7 +12,7 @@ import { makeMessageId } from '~/domain/types';
  * @param {string} content - The textual content of the message.
  * @returns {Message} A message object containing all necessary properties, including a unique ID and timestamp.
  */
-export const createMessage = (
+export const messageCreate = (
   conversationId: ConversationId,
   role: MessageRole,
   content: string
@@ -33,7 +33,7 @@ export const createMessage = (
  * @returns {(messages: Message[]) => readonly Message[]} A function that, when given
  * an array of messages, returns a new array containing the last `n` messages.
  */
-export const takeLastMessages =
+export const messageTakeLast =
   (n: number): ((messages: Message[]) => readonly Message[]) =>
   (messages: Message[]): readonly Message[] =>
     pipe(messages, Arr.takeRight(n));
@@ -45,7 +45,7 @@ export const takeLastMessages =
  * @returns {string} A single formatted string where each message is represented as "role: content",
  *                   with each message separated by a newline character.
  */
-export const formatMessagesForAI = (messages: readonly Message[]): string =>
+export const messageFormatForAI = (messages: readonly Message[]): string =>
   messages.map((m) => `${m.role}: ${m.content}`).join('\n');
 
 /**
@@ -54,7 +54,19 @@ export const formatMessagesForAI = (messages: readonly Message[]): string =>
  * @param {MessageRole} role - The role used as the filter criteria.
  * @returns {(messages: readonly Message[]) => readonly Message[]} A function that takes an array of messages and returns a new array containing only the messages with the specified role.
  */
-export const filterByRole =
+export const messageFilterByRole =
   (role: MessageRole): ((messages: readonly Message[]) => readonly Message[]) =>
   (messages: readonly Message[]): readonly Message[] =>
     messages.filter((m) => m.role === role);
+
+/**
+ * A higher-order function that appends a message object to an existing array of messages.
+ *
+ * @function
+ * @param {Message} message - The message object to be appended.
+ * @returns {function} A function that takes an array of messages and returns
+ * a new array with the provided message added to the end.
+ */
+export const messageAppend =
+  (message: Message): ((messages: readonly Message[]) => readonly Message[]) =>
+  (messages: readonly Message[]): readonly Message[] => [...messages, message];

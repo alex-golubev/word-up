@@ -1,4 +1,4 @@
-import type { Language, ScenarioId, UserLevel } from '~/domain/types/common';
+import type { Language, ScenarioId, UserLevel } from '~/domain/types';
 
 export type Scenario = {
   readonly id: ScenarioId;
