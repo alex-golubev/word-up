@@ -4,25 +4,33 @@ import * as Arr from 'fp-ts/Array';
 import type { ConversationId, Message, MessageRole } from '~/domain/types';
 import { makeMessageId } from '~/domain/types';
 
-/**
- * Creates a new message object for a conversation.
- *
- * @param {ConversationId} conversationId - The unique identifier of the conversation where the message belongs.
- * @param {MessageRole} role - The role of the message sender, such as user or system.
- * @param {string} content - The textual content of the message.
- * @returns {Message} A message object containing all necessary properties, including a unique ID and timestamp.
- */
+const MESSAGE_CONTENT_MAX_LENGTH = 10000;
+
+const validateMessageContent = (content: string): void => {
+  if (content.trim().length === 0) {
+    throw new Error('Message content cannot be empty');
+  }
+  if (content.length > MESSAGE_CONTENT_MAX_LENGTH) {
+    throw new Error(
+      `Message content exceeds maximum length of ${MESSAGE_CONTENT_MAX_LENGTH} characters`
+    );
+  }
+};
+
 export const messageCreate = (
   conversationId: ConversationId,
   role: MessageRole,
   content: string
-): Message => ({
-  id: makeMessageId(randomUUID()),
-  conversationId,
-  role,
-  content,
-  timestamp: new Date(),
-});
+): Message => {
+  validateMessageContent(content);
+  return {
+    id: makeMessageId(randomUUID()),
+    conversationId,
+    role,
+    content,
+    createdAt: new Date(),
+  };
+};
 
 /**
  * A higher-order function that takes a number `n` and returns a function.

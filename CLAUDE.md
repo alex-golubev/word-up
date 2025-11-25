@@ -87,6 +87,7 @@ Checks code formatting without making changes (useful for CI).
 ### Code Quality Tools
 
 **ESLint** - Integrated with Prettier and custom TypeScript rules:
+
 - Next.js core web vitals and TypeScript configurations
 - Prettier integration via `eslint-plugin-prettier` and `eslint-config-prettier`
 - Custom rules:
@@ -95,6 +96,7 @@ Checks code formatting without making changes (useful for CI).
 - Custom ignores: `.next/`, `out/`, `build/`, `next-env.d.ts`
 
 **Prettier** - Code formatting with these settings:
+
 - Single quotes for strings
 - Semicolons required
 - 100 character line width
