@@ -31,15 +31,13 @@ export const createMessageEffects = (db: DBClient) => ({
       (error) => new Error('Failed to save message', { cause: error })
     ),
 
-  getMessagesByConversation: (
-    conversationId: ConversationId
-  ): TaskEither<Error, readonly Message[]> =>
+  getMessagesByConversation: (id: ConversationId): TaskEither<Error, readonly Message[]> =>
     tryCatch(
       async (): Promise<Message[]> => {
         const selected = await db
           .select()
           .from(messages)
-          .where(eq(messages.conversationId, conversationId))
+          .where(eq(messages.conversationId, id))
           .orderBy(messages.createdAt);
 
         return selected.map(mapRowToMessage);

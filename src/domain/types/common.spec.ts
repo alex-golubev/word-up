@@ -5,8 +5,8 @@ import {
   makeUserId,
 } from '~/domain/types/common';
 
-const VALID_UUID = '11111111-1111-1111-1111-111111111111';
-const VALID_UUID_UPPERCASE = '11111111-1111-1111-1111-111111111111'.toUpperCase();
+const VALID_UUID = crypto.randomUUID();
+const VALID_UUID_UPPERCASE = crypto.randomUUID().toUpperCase();
 
 const INVALID_UUIDS = [
   '',

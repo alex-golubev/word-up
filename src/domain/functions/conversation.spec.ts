@@ -1,5 +1,9 @@
-import type { Conversation, Message } from '~/domain/types';
-import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types';
+import {
+  TEST_USER_ID,
+  TEST_SCENARIO_ID,
+  createTestConversation,
+  createTestMessage,
+} from '~/test/fixtures';
 import {
   conversationAddMessage,
   conversationCreate,
@@ -7,29 +11,6 @@ import {
   conversationMessages,
   conversationMessagesCount,
 } from '~/domain/functions/conversation';
-
-const TEST_USER_ID = makeUserId('11111111-1111-1111-1111-111111111111');
-const TEST_SCENARIO_ID = makeScenarioId('test-scenario');
-const TEST_CONVERSATION_ID = makeConversationId('22222222-2222-2222-2222-222222222222');
-
-const createTestMessage = (content: string, index: number): Message => ({
-  id: makeMessageId(`33333333-3333-3333-3333-33333333333${index}`),
-  conversationId: TEST_CONVERSATION_ID,
-  role: 'user',
-  content,
-  createdAt: new Date('2024-01-01'),
-});
-
-const createTestConversation = (messages: readonly Message[] = []): Conversation => ({
-  id: TEST_CONVERSATION_ID,
-  userId: TEST_USER_ID,
-  scenarioId: TEST_SCENARIO_ID,
-  targetLanguage: 'en',
-  userLevel: 'beginner',
-  messages,
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-});
 
 describe('conversationCreate', () => {
   it('should create a conversation with valid parameters', () => {
@@ -64,7 +45,7 @@ describe('conversationCreate', () => {
 describe('conversationAddMessage', () => {
   it('should add message to conversation', () => {
     const conversation = createTestConversation();
-    const message = createTestMessage('Hello', 1);
+    const message = createTestMessage({ content: 'Hello' });
 
     const result = conversationAddMessage(message)(conversation);
 
@@ -74,7 +55,7 @@ describe('conversationAddMessage', () => {
 
   it('should not mutate original conversation', () => {
     const conversation = createTestConversation();
-    const message = createTestMessage('Hello', 1);
+    const message = createTestMessage({ content: 'Hello' });
 
     conversationAddMessage(message)(conversation);
 
@@ -83,8 +64,8 @@ describe('conversationAddMessage', () => {
 
   it('should append multiple messages in order', () => {
     const conversation = createTestConversation();
-    const message1 = createTestMessage('First', 1);
-    const message2 = createTestMessage('Second', 2);
+    const message1 = createTestMessage({ content: 'First' });
+    const message2 = createTestMessage({ content: 'Second' });
 
     const result = conversationAddMessage(message2)(conversationAddMessage(message1)(conversation));
 
@@ -96,8 +77,11 @@ describe('conversationAddMessage', () => {
 
 describe('conversationMessages', () => {
   it('should return messages from conversation', () => {
-    const messages = [createTestMessage('Hello', 1), createTestMessage('World', 2)];
-    const conversation = createTestConversation(messages);
+    const messages = [
+      createTestMessage({ content: 'Hello' }),
+      createTestMessage({ content: 'World' }),
+    ];
+    const conversation = createTestConversation({ messages });
 
     const result = conversationMessages(conversation);
 
@@ -116,11 +100,11 @@ describe('conversationMessages', () => {
 describe('conversationMessagesCount', () => {
   it('should return correct count of messages', () => {
     const messages = [
-      createTestMessage('One', 1),
-      createTestMessage('Two', 2),
-      createTestMessage('Three', 3),
+      createTestMessage({ content: 'One' }),
+      createTestMessage({ content: 'Two' }),
+      createTestMessage({ content: 'Three' }),
     ];
-    const conversation = createTestConversation(messages);
+    const conversation = createTestConversation({ messages });
 
     const result = conversationMessagesCount(conversation);
 
@@ -139,11 +123,11 @@ describe('conversationMessagesCount', () => {
 describe('conversationLastMessage', () => {
   it('should return last message', () => {
     const messages = [
-      createTestMessage('First', 1),
-      createTestMessage('Second', 2),
-      createTestMessage('Last', 3),
+      createTestMessage({ content: 'First' }),
+      createTestMessage({ content: 'Second' }),
+      createTestMessage({ content: 'Last' }),
     ];
-    const conversation = createTestConversation(messages);
+    const conversation = createTestConversation({ messages });
 
     const result = conversationLastMessage(conversation);
 
@@ -159,8 +143,8 @@ describe('conversationLastMessage', () => {
   });
 
   it('should return single message if only one exists', () => {
-    const messages = [createTestMessage('Only', 1)];
-    const conversation = createTestConversation(messages);
+    const messages = [createTestMessage({ content: 'Only' })];
+    const conversation = createTestConversation({ messages });
 
     const result = conversationLastMessage(conversation);
 
