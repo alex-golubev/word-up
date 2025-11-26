@@ -5,7 +5,7 @@ export type Message = {
   readonly conversationId: ConversationId;
   readonly role: MessageRole;
   readonly content: string;
-  readonly timestamp: Date;
+  readonly createdAt: Date;
 };
 
 export type Correction = {
