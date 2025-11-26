@@ -17,6 +17,15 @@ const validateMessageContent = (content: string): void => {
   }
 };
 
+/**
+ * Creates a new message object with a unique identifier, associated conversation ID, role,
+ * message content, and creation timestamp.
+ *
+ * @param {ConversationId} conversationId - The unique identifier for the conversation to which the message belongs.
+ * @param {MessageRole} role - The role associated with the message (e.g., user, system, etc.).
+ * @param {string} content - The content of the message. Must pass validation criteria.
+ * @returns {Message} A newly created message object containing an ID, conversation ID, role, content, and a timestamp.
+ */
 export const messageCreate = (
   conversationId: ConversationId,
   role: MessageRole,

@@ -5,5 +5,5 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   nativeLanguage: languageEnum('native_language').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
