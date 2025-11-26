@@ -109,9 +109,7 @@ describe('sendMessageUseCase', () => {
       content: '',
     };
 
-    await expect(sendMessageUseCase(params, deps)()).rejects.toThrow(
-      'Message content cannot be empty'
-    );
+    await expect(sendMessageUseCase(params, deps)()).rejects.toThrow('Message content cannot be empty');
   });
 
   it('should throw error for content exceeding max length', async () => {

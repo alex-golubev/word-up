@@ -1,9 +1,4 @@
-import {
-  TEST_USER_ID,
-  TEST_SCENARIO_ID,
-  createTestConversation,
-  createTestMessage,
-} from '~/test/fixtures';
+import { TEST_USER_ID, TEST_SCENARIO_ID, createTestConversation, createTestMessage } from '~/test/fixtures';
 import {
   conversationAddMessage,
   conversationCreate,
@@ -77,10 +72,7 @@ describe('conversationAddMessage', () => {
 
 describe('conversationMessages', () => {
   it('should return messages from conversation', () => {
-    const messages = [
-      createTestMessage({ content: 'Hello' }),
-      createTestMessage({ content: 'World' }),
-    ];
+    const messages = [createTestMessage({ content: 'Hello' }), createTestMessage({ content: 'World' })];
     const conversation = createTestConversation({ messages });
 
     const result = conversationMessages(conversation);

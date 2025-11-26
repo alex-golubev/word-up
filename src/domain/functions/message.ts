@@ -11,18 +11,12 @@ const validateMessageContent = (content: string): void => {
     throw new Error('Message content cannot be empty');
   }
   if (content.length > MESSAGE_CONTENT_MAX_LENGTH) {
-    throw new Error(
-      `Message content exceeds maximum length of ${MESSAGE_CONTENT_MAX_LENGTH} characters`
-    );
+    throw new Error(`Message content exceeds maximum length of ${MESSAGE_CONTENT_MAX_LENGTH} characters`);
   }
 };
 
 /** @throws {Error} If content is empty or exceeds 10,000 characters */
-export const messageCreate = (
-  conversationId: ConversationId,
-  role: MessageRole,
-  content: string
-): Message => {
+export const messageCreate = (conversationId: ConversationId, role: MessageRole, content: string): Message => {
   validateMessageContent(content);
   return {
     id: makeMessageId(randomUUID()),

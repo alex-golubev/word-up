@@ -15,10 +15,7 @@ type SendMessageParams = {
   readonly content: string;
 };
 
-export const sendMessageUseCase = (
-  params: SendMessageParams,
-  deps: SendMessageDeps
-): TaskEither<Error, Message> =>
+export const sendMessageUseCase = (params: SendMessageParams, deps: SendMessageDeps): TaskEither<Error, Message> =>
   pipe(
     deps.getConversation(params.conversationId),
     map((conversation) => messageCreate(conversation.id, params.role, params.content)),

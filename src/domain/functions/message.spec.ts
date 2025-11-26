@@ -20,15 +20,11 @@ describe('messageCreate', () => {
   });
 
   it('should throw error for empty content', () => {
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '')).toThrow(
-      'Message content cannot be empty'
-    );
+    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '')).toThrow('Message content cannot be empty');
   });
 
   it('should throw error for whitespace-only content', () => {
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '   ')).toThrow(
-      'Message content cannot be empty'
-    );
+    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '   ')).toThrow('Message content cannot be empty');
   });
 
   it('should throw error for content exceeding max length', () => {
