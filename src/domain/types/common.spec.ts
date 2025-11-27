@@ -66,9 +66,8 @@ describe('makeScenarioId', () => {
     expect(result).toBe('my-scenario');
   });
 
-  it('should accept empty string', () => {
-    const result = makeScenarioId('');
-    expect(result).toBe('');
+  it('should throw error for empty string', () => {
+    expect(() => makeScenarioId('')).toThrow('Invalid ScenarioId');
   });
 
   it('should accept UUID format', () => {
