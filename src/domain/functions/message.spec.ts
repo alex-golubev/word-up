@@ -1,5 +1,5 @@
-import type { ConversationId, Message, MessageId } from '~/domain/types';
-import { makeConversationId, makeMessageId } from '~/domain/types';
+import type { Message } from '~/domain/types';
+import { TEST_CONVERSATION_ID, createTestMessage } from '~/test/fixtures';
 import {
   messageAppend,
   messageCreate,
@@ -7,17 +7,6 @@ import {
   messageFormatForAI,
   messageTakeLast,
 } from '~/domain/functions/message';
-
-const TEST_CONVERSATION_ID = makeConversationId('11111111-1111-1111-1111-111111111111');
-
-const createTestMessage = (
-  overrides: Partial<Message> & { id: MessageId; conversationId: ConversationId }
-): Message => ({
-  role: 'user',
-  content: 'test content',
-  createdAt: new Date('2024-01-01'),
-  ...overrides,
-});
 
 describe('messageCreate', () => {
   it('should create a message with valid content', () => {
@@ -31,15 +20,11 @@ describe('messageCreate', () => {
   });
 
   it('should throw error for empty content', () => {
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '')).toThrow(
-      'Message content cannot be empty'
-    );
+    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '')).toThrow('Message content cannot be empty');
   });
 
   it('should throw error for whitespace-only content', () => {
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '   ')).toThrow(
-      'Message content cannot be empty'
-    );
+    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '   ')).toThrow('Message content cannot be empty');
   });
 
   it('should throw error for content exceeding max length', () => {
@@ -60,21 +45,9 @@ describe('messageCreate', () => {
 
 describe('messageTakeLast', () => {
   const messages: Message[] = [
-    createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000001'),
-      conversationId: TEST_CONVERSATION_ID,
-      content: 'First',
-    }),
-    createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000002'),
-      conversationId: TEST_CONVERSATION_ID,
-      content: 'Second',
-    }),
-    createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000003'),
-      conversationId: TEST_CONVERSATION_ID,
-      content: 'Third',
-    }),
+    createTestMessage({ content: 'First' }),
+    createTestMessage({ content: 'Second' }),
+    createTestMessage({ content: 'Third' }),
   ];
 
   it('should take last n messages', () => {
@@ -107,18 +80,8 @@ describe('messageTakeLast', () => {
 describe('messageFormatForAI', () => {
   it('should format messages as role: content', () => {
     const messages: Message[] = [
-      createTestMessage({
-        id: makeMessageId('11111111-0000-0000-0000-000000000001'),
-        conversationId: TEST_CONVERSATION_ID,
-        role: 'user',
-        content: 'Hello',
-      }),
-      createTestMessage({
-        id: makeMessageId('11111111-0000-0000-0000-000000000002'),
-        conversationId: TEST_CONVERSATION_ID,
-        role: 'assistant',
-        content: 'Hi there!',
-      }),
+      createTestMessage({ role: 'user', content: 'Hello' }),
+      createTestMessage({ role: 'assistant', content: 'Hi there!' }),
     ];
 
     const result = messageFormatForAI(messages);
@@ -135,24 +98,9 @@ describe('messageFormatForAI', () => {
 
 describe('messageFilterByRole', () => {
   const messages: Message[] = [
-    createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000001'),
-      conversationId: TEST_CONVERSATION_ID,
-      role: 'user',
-      content: 'User message 1',
-    }),
-    createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000002'),
-      conversationId: TEST_CONVERSATION_ID,
-      role: 'assistant',
-      content: 'Assistant message',
-    }),
-    createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000003'),
-      conversationId: TEST_CONVERSATION_ID,
-      role: 'user',
-      content: 'User message 2',
-    }),
+    createTestMessage({ role: 'user', content: 'User message 1' }),
+    createTestMessage({ role: 'assistant', content: 'Assistant message' }),
+    createTestMessage({ role: 'user', content: 'User message 2' }),
   ];
 
   it('should filter messages by user role', () => {
@@ -179,18 +127,8 @@ describe('messageFilterByRole', () => {
 
 describe('messageAppend', () => {
   it('should append message to array', () => {
-    const existingMessages: Message[] = [
-      createTestMessage({
-        id: makeMessageId('11111111-0000-0000-0000-000000000001'),
-        conversationId: TEST_CONVERSATION_ID,
-        content: 'First',
-      }),
-    ];
-    const newMessage = createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000002'),
-      conversationId: TEST_CONVERSATION_ID,
-      content: 'Second',
-    });
+    const existingMessages: Message[] = [createTestMessage({ content: 'First' })];
+    const newMessage = createTestMessage({ content: 'Second' });
 
     const result = messageAppend(newMessage)(existingMessages);
 
@@ -199,18 +137,8 @@ describe('messageAppend', () => {
   });
 
   it('should not mutate original array', () => {
-    const existingMessages: Message[] = [
-      createTestMessage({
-        id: makeMessageId('11111111-0000-0000-0000-000000000001'),
-        conversationId: TEST_CONVERSATION_ID,
-        content: 'First',
-      }),
-    ];
-    const newMessage = createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000002'),
-      conversationId: TEST_CONVERSATION_ID,
-      content: 'Second',
-    });
+    const existingMessages: Message[] = [createTestMessage({ content: 'First' })];
+    const newMessage = createTestMessage({ content: 'Second' });
 
     messageAppend(newMessage)(existingMessages);
 
@@ -218,11 +146,7 @@ describe('messageAppend', () => {
   });
 
   it('should work with empty array', () => {
-    const newMessage = createTestMessage({
-      id: makeMessageId('11111111-0000-0000-0000-000000000001'),
-      conversationId: TEST_CONVERSATION_ID,
-      content: 'First',
-    });
+    const newMessage = createTestMessage({ content: 'First' });
 
     const result = messageAppend(newMessage)([]);
 

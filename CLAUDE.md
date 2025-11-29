@@ -4,120 +4,98 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 16 application using the App Router architecture with TypeScript, React 19, and TailwindCSS 4. The project follows Next.js's modern file-based routing conventions with the `src/app` directory structure.
+Word-Up is a language learning application built with Next.js 16, React 19, TypeScript, and TailwindCSS 4. It uses Clean Architecture with fp-ts for functional error handling and Drizzle ORM with Neon (PostgreSQL) for persistence.
 
 ## Development Commands
 
-### Running the Development Server
-
 ```bash
-npm run dev
+npm run dev          # Start development server at http://localhost:3000
+npm run build        # Create production build
+npm run start        # Run production server
+npm run lint         # Run ESLint
+npm run typecheck    # Run TypeScript type checking
+npm run format       # Auto-format with Prettier
+npm run test         # Run all tests with Jest
+npm run test -- path/to/file.spec.ts  # Run a single test file
 ```
 
-Opens development server at http://localhost:3000 with hot reloading enabled.
-
-### Building for Production
+### Database Commands (Drizzle)
 
 ```bash
-npm run build
+npm run db:generate  # Generate migrations from schema changes
+npm run db:migrate   # Run pending migrations
+npm run db:push      # Push schema directly to database (dev only)
+npm run db:studio    # Open Drizzle Studio GUI
 ```
 
-Creates an optimized production build. The build output is generated in the `.next` directory.
+## Architecture
 
-### Running Production Build Locally
+The codebase follows **Clean Architecture** with three distinct layers:
 
-```bash
-npm run start
+### Domain Layer (`src/domain/`)
+Pure business logic with no external dependencies.
+- **`types/`** - Branded types using Zod schemas (e.g., `UserId`, `ConversationId`, `MessageId`)
+- **`functions/`** - Pure domain functions (e.g., `messageCreate`, `messageTakeLast`)
+
+### Application Layer (`src/application/`)
+Use cases that orchestrate domain logic with effects.
+- **`use-cases/`** - Business operations returning `TaskEither<Error, T>` for typed async error handling
+- Dependencies are injected as parameters for testability
+
+### Infrastructure Layer (`src/infrastructure/`)
+External concerns (database, APIs).
+- **`db/schemas/`** - Drizzle ORM table definitions
+- **`db/client.ts`** - Database connection (Neon serverless)
+- **`effects/`** - Side-effectful operations wrapped in `TaskEither`
+
+## Key Patterns
+
+### Branded Types with Zod
+Domain IDs use Zod's `.brand()` for type safety:
+```typescript
+const UserIdSchema = z.guid({ error: 'Invalid UserId' }).brand('UserId');
+export type UserId = z.infer<typeof UserIdSchema>;
+export const makeUserId = (id: string): UserId => UserIdSchema.parse(id);
 ```
 
-Starts the production server (requires running `npm run build` first).
+### fp-ts TaskEither for Async Error Handling
+All async operations use `TaskEither<Error, T>` instead of try/catch:
+```typescript
+import { pipe } from 'fp-ts/function';
+import { chain, map } from 'fp-ts/TaskEither';
 
-### Linting and Formatting
-
-```bash
-npm run lint
+export const sendMessageUseCase = (params, deps): TaskEither<Error, Message> =>
+  pipe(
+    deps.getConversation(params.conversationId),
+    map((conv) => messageCreate(conv.id, params.role, params.content)),
+    chain((msg) => deps.saveMessage(msg))
+  );
 ```
 
-Runs ESLint with Next.js configuration, Prettier integration, and custom TypeScript rules.
-
-```bash
-npm run format
+### Dependency Injection in Use Cases
+Use cases receive dependencies as a second parameter for easy mocking:
+```typescript
+type SendMessageDeps = {
+  readonly getConversation: (id: ConversationId) => TaskEither<Error, Conversation>;
+  readonly saveMessage: (message: Message) => TaskEither<Error, Message>;
+};
 ```
 
-Auto-formats all files using Prettier.
-
-```bash
-npm run format:check
+### Test Fixtures
+Use `src/test/fixtures.ts` for consistent test data:
+```typescript
+import { createTestMessage, createTestConversation, TEST_CONVERSATION_ID } from '~/test/fixtures';
 ```
 
-Checks code formatting without making changes (useful for CI).
+## TypeScript Configuration
 
-## Project Structure
-
-- **`src/app/`** - App Router directory containing all routes and pages
-  - `layout.tsx` - Root layout component with font configuration (Geist Sans and Geist Mono)
-  - `page.tsx` - Home page component
-  - `globals.css` - Global styles and TailwindCSS imports
-- **`next.config.ts`** - Next.js configuration (TypeScript-based)
-- **`tsconfig.json`** - TypeScript configuration with path alias `~/*` mapping to `./src/*`
-
-## Key Technologies & Configuration
-
-### TypeScript
-
-- Path alias: `~/*` resolves to `./src/*`
+- Path alias: `~/*` → `./src/*`
 - Strict mode enabled
-- Target: ES2017
-- Module resolution: bundler
+- Use `import type` for type-only imports
 
-### TailwindCSS
+## Code Style
 
-- Uses TailwindCSS 4 with PostCSS plugin (`@tailwindcss/postcss`)
-- Custom theme variables defined in `globals.css` using `@theme inline`
-- Dark mode support via CSS media queries (`prefers-color-scheme`)
-- Custom CSS variables: `--background`, `--foreground`, `--font-geist-sans`, `--font-geist-mono`
-
-### Next.js App Router
-
-- Uses React Server Components by default
-- Client components require `'use client'` directive
-- Font optimization with `next/font` for Geist font family
-- Image optimization with `next/image`
-
-### Code Quality Tools
-
-**ESLint** - Integrated with Prettier and custom TypeScript rules:
-
-- Next.js core web vitals and TypeScript configurations
-- Prettier integration via `eslint-plugin-prettier` and `eslint-config-prettier`
-- Custom rules:
-  - `@typescript-eslint/consistent-type-imports` - Enforces `import type` syntax for type-only imports with separate import statements
-  - `eol-last` - Requires newline at end of files
-- Custom ignores: `.next/`, `out/`, `build/`, `next-env.d.ts`
-
-**Prettier** - Code formatting with these settings:
-
-- Single quotes for strings
-- Semicolons required
+- Single quotes, semicolons required
 - 100 character line width
-- 2 space indentation
-- LF line endings
 - Trailing commas (ES5 style)
-
-## Architecture Notes
-
-### Font Loading
-
-Fonts are loaded in the root layout using Next.js's `next/font/google` with CSS variable injection. The Geist Sans and Geist Mono fonts are configured with Latin subsets and exposed as CSS variables (`--font-geist-sans`, `--font-geist-mono`) that are referenced in the TailwindCSS theme configuration.
-
-### Styling Strategy
-
-The project uses a hybrid CSS approach:
-
-- TailwindCSS utility classes for component styling
-- CSS custom properties for theming
-- TailwindCSS 4's `@theme inline` directive for extending the design system with project-specific tokens
-
-### Dark Mode
-
-Dark mode is implemented using CSS media queries rather than class-based toggling, automatically following the user's system preferences.
+- Requires newline at end of files

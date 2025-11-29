@@ -1,12 +1,7 @@
-import {
-  makeConversationId,
-  makeMessageId,
-  makeScenarioId,
-  makeUserId,
-} from '~/domain/types/common';
+import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types/common';
 
-const VALID_UUID = '11111111-1111-1111-1111-111111111111';
-const VALID_UUID_UPPERCASE = '11111111-1111-1111-1111-111111111111'.toUpperCase();
+const VALID_UUID = crypto.randomUUID();
+const VALID_UUID_UPPERCASE = crypto.randomUUID().toUpperCase();
 
 const INVALID_UUIDS = [
   '',
@@ -71,9 +66,8 @@ describe('makeScenarioId', () => {
     expect(result).toBe('my-scenario');
   });
 
-  it('should accept empty string', () => {
-    const result = makeScenarioId('');
-    expect(result).toBe('');
+  it('should throw error for empty string', () => {
+    expect(() => makeScenarioId('')).toThrow('Invalid ScenarioId');
   });
 
   it('should accept UUID format', () => {

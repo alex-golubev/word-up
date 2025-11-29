@@ -1,11 +1,13 @@
 import * as E from 'fp-ts/Either';
-import { makeConversationId, makeScenarioId, makeUserId } from '~/domain/types';
 import type { DBClient } from '~/infrastructure/db/client';
 import { conversationEffects } from '~/infrastructure/effects/conversation.effects';
-
-const TEST_USER_ID = makeUserId('11111111-1111-1111-1111-111111111111');
-const TEST_SCENARIO_ID = makeScenarioId('test-scenario');
-const TEST_CONVERSATION_ID = makeConversationId('22222222-2222-2222-2222-222222222222');
+import {
+  TEST_USER_ID,
+  TEST_SCENARIO_ID,
+  TEST_CONVERSATION_ID,
+  createTestConversationRow,
+  createMockDB,
+} from '~/test/fixtures';
 
 const createTestParams = () => ({
   id: TEST_CONVERSATION_ID,
@@ -15,38 +17,12 @@ const createTestParams = () => ({
   userLevel: 'beginner' as const,
 });
 
-const createTestRow = () => ({
-  id: TEST_CONVERSATION_ID as string,
-  userId: TEST_USER_ID as string,
-  scenarioId: TEST_SCENARIO_ID as string,
-  targetLanguage: 'en' as const,
-  userLevel: 'beginner' as const,
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-});
-
-const createMockDB = () => {
-  const mockReturning = jest.fn();
-  const mockValues = jest.fn(() => ({ returning: mockReturning }));
-  const mockInsert = jest.fn(() => ({ values: mockValues }));
-
-  const mockWhere = jest.fn();
-  const mockFrom = jest.fn(() => ({ where: mockWhere }));
-  const mockSelect = jest.fn(() => ({ from: mockFrom }));
-
-  return {
-    insert: mockInsert,
-    select: mockSelect,
-    _mocks: { mockReturning, mockValues, mockInsert, mockWhere, mockFrom, mockSelect },
-  } as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-};
-
 describe('conversationEffects', () => {
   describe('createConversation', () => {
     it('should create conversation and return it', async () => {
-      const db = createMockDB();
+      const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
       const params = createTestParams();
-      const row = createTestRow();
+      const row = createTestConversationRow();
 
       db._mocks.mockReturning.mockResolvedValue([row]);
 
@@ -63,7 +39,7 @@ describe('conversationEffects', () => {
     });
 
     it('should return error when insert returns no rows', async () => {
-      const db = createMockDB();
+      const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
       const params = createTestParams();
 
       db._mocks.mockReturning.mockResolvedValue([]);
@@ -78,7 +54,7 @@ describe('conversationEffects', () => {
     });
 
     it('should return error when database throws', async () => {
-      const db = createMockDB();
+      const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
       const params = createTestParams();
 
       db._mocks.mockReturning.mockRejectedValue(new Error('DB error'));
@@ -95,8 +71,8 @@ describe('conversationEffects', () => {
 
   describe('getConversation', () => {
     it('should return conversation by id', async () => {
-      const db = createMockDB();
-      const row = createTestRow();
+      const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
+      const row = createTestConversationRow();
 
       db._mocks.mockWhere.mockResolvedValue([row]);
 
@@ -112,7 +88,7 @@ describe('conversationEffects', () => {
     });
 
     it('should return error when conversation not found', async () => {
-      const db = createMockDB();
+      const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
       db._mocks.mockWhere.mockResolvedValue([]);
 
@@ -126,7 +102,7 @@ describe('conversationEffects', () => {
     });
 
     it('should return error when database throws', async () => {
-      const db = createMockDB();
+      const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
       db._mocks.mockWhere.mockRejectedValue(new Error('DB error'));
 

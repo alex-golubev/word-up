@@ -1,32 +1,24 @@
-export type UserId = string & { readonly __brand: 'UserId' };
-export type ConversationId = string & { readonly __brand: 'ConversationId' };
-export type MessageId = string & { readonly __brand: 'MessageId' };
-export type ScenarioId = string & { readonly __brand: 'ScenarioId' };
+import { z } from 'zod';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UserIdSchema = z.guid({ error: 'Invalid UserId' }).brand('UserId');
+const ConversationIdSchema = z.guid({ error: 'Invalid ConversationId' }).brand('ConversationId');
+const MessageIdSchema = z.guid({ error: 'Invalid MessageId' }).brand('MessageId');
 
-const validateUUID = (id: string, typeName: string): void => {
-  if (!UUID_REGEX.test(id)) {
-    throw new Error(`Invalid ${typeName}: "${id}" is not a valid UUID`);
-  }
-};
+const ScenarioIdSchema = z
+  .string()
+  .min(1, { message: 'Invalid ScenarioId' })
+  .max(50, { message: 'Invalid ScenarioId' })
+  .brand('ScenarioId');
 
-export const makeUserId = (id: string): UserId => {
-  validateUUID(id, 'UserId');
-  return id as UserId;
-};
+export type UserId = z.infer<typeof UserIdSchema>;
+export type ConversationId = z.infer<typeof ConversationIdSchema>;
+export type MessageId = z.infer<typeof MessageIdSchema>;
+export type ScenarioId = z.infer<typeof ScenarioIdSchema>;
 
-export const makeConversationId = (id: string): ConversationId => {
-  validateUUID(id, 'ConversationId');
-  return id as ConversationId;
-};
-
-export const makeMessageId = (id: string): MessageId => {
-  validateUUID(id, 'MessageId');
-  return id as MessageId;
-};
-
-export const makeScenarioId = (id: string): ScenarioId => id as ScenarioId;
+export const makeUserId = (id: string): UserId => UserIdSchema.parse(id);
+export const makeConversationId = (id: string): ConversationId => ConversationIdSchema.parse(id);
+export const makeMessageId = (id: string): MessageId => MessageIdSchema.parse(id);
+export const makeScenarioId = (id: string): ScenarioId => ScenarioIdSchema.parse(id);
 
 export type MessageRole = 'user' | 'assistant';
 export type UserLevel = 'beginner' | 'intermediate' | 'advanced';
