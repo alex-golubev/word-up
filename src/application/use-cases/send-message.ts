@@ -18,6 +18,8 @@ type SendMessageParams = {
 export const sendMessageUseCase = (params: SendMessageParams, deps: SendMessageDeps): TaskEither<Error, Message> =>
   pipe(
     deps.getConversation(params.conversationId),
-    map((conversation) => messageCreate(conversation.id, params.role, params.content)),
+    map((conversation) =>
+      messageCreate({ conversationId: conversation.id, role: params.role, content: params.content })
+    ),
     chain((message) => deps.saveMessage(message))
   );

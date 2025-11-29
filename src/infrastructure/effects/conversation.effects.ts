@@ -1,18 +1,10 @@
-import { eq } from 'drizzle-orm';
-import { tryCatch } from 'fp-ts/TaskEither';
-import { conversations } from '~/infrastructure/db/schemas';
-import { makeConversationId, makeScenarioId, makeUserId } from '~/domain/types';
-import type { Conversation, ConversationId, Language, ScenarioId, UserId, UserLevel } from '~/domain/types';
 import type { TaskEither } from 'fp-ts/TaskEither';
+import { tryCatch } from 'fp-ts/TaskEither';
+import { eq } from 'drizzle-orm';
+import { makeConversationId, makeScenarioId, makeUserId } from '~/domain/types';
+import { conversations } from '~/infrastructure/db/schemas';
 import type { DBClient } from '~/infrastructure/db/client';
-
-type CreateConversationParams = {
-  readonly id: ConversationId;
-  readonly userId: UserId;
-  readonly scenarioId: ScenarioId;
-  readonly targetLanguage: Language;
-  readonly userLevel: UserLevel;
-};
+import type { Conversation, ConversationId } from '~/domain/types';
 
 type ConversationRow = typeof conversations.$inferSelect;
 
@@ -27,18 +19,22 @@ const mapRowToConversation = (row: ConversationRow): Conversation => ({
   updatedAt: row.updatedAt,
 });
 
-export const conversationEffects = (db: DBClient) => ({
-  createConversation: (params: CreateConversationParams): TaskEither<Error, Conversation> =>
+/**
+ * Creates a ConversationEffects instance with database operations.
+ * @param db - Database client for executing queries.
+ */
+export const createConversationEffects = (db: DBClient) => ({
+  saveConversation: (conversation: Conversation): TaskEither<Error, Conversation> =>
     tryCatch(
       async (): Promise<Conversation> => {
-        const [inserted] = await db.insert(conversations).values(params).returning();
-        if (!inserted) throw new Error('Failed to create conversation');
+        const [inserted] = await db.insert(conversations).values(conversation).returning();
+        if (!inserted) throw new Error('Insert returned no rows');
         return mapRowToConversation(inserted);
       },
-      (error) => new Error('Failed to create conversation', { cause: error })
+      (error) => new Error('Failed to save conversation', { cause: error })
     ),
 
-  getConversation: (conversationId: ConversationId) =>
+  getConversation: (conversationId: ConversationId): TaskEither<Error, Conversation> =>
     tryCatch(
       async (): Promise<Conversation> => {
         const [selected] = await db.select().from(conversations).where(eq(conversations.id, conversationId));
@@ -48,3 +44,5 @@ export const conversationEffects = (db: DBClient) => ({
       (error) => new Error('Failed to get conversation', { cause: error })
     ),
 });
+
+export type ConversationEffects = ReturnType<typeof createConversationEffects>;

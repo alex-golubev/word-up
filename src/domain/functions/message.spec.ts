@@ -9,8 +9,14 @@ import {
 } from '~/domain/functions/message';
 
 describe('messageCreate', () => {
+  const defaultParams = {
+    conversationId: TEST_CONVERSATION_ID,
+    role: 'user' as const,
+    content: 'Hello, world!',
+  };
+
   it('should create a message with valid content', () => {
-    const message = messageCreate(TEST_CONVERSATION_ID, 'user', 'Hello, world!');
+    const message = messageCreate(defaultParams);
 
     expect(message.conversationId).toBe(TEST_CONVERSATION_ID);
     expect(message.role).toBe('user');
@@ -20,24 +26,24 @@ describe('messageCreate', () => {
   });
 
   it('should throw error for empty content', () => {
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '')).toThrow('Message content cannot be empty');
+    expect(() => messageCreate({ ...defaultParams, content: '' })).toThrow('Message content cannot be empty');
   });
 
   it('should throw error for whitespace-only content', () => {
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'user', '   ')).toThrow('Message content cannot be empty');
+    expect(() => messageCreate({ ...defaultParams, content: '   ' })).toThrow('Message content cannot be empty');
   });
 
   it('should throw error for content exceeding max length', () => {
     const longContent = 'a'.repeat(10001);
 
-    expect(() => messageCreate(TEST_CONVERSATION_ID, 'assistant', longContent)).toThrow(
+    expect(() => messageCreate({ ...defaultParams, role: 'assistant', content: longContent })).toThrow(
       'Message content exceeds maximum length of 10000 characters'
     );
   });
 
   it('should accept content at max length', () => {
     const maxContent = 'a'.repeat(10000);
-    const message = messageCreate(TEST_CONVERSATION_ID, 'user', maxContent);
+    const message = messageCreate({ ...defaultParams, content: maxContent });
 
     expect(message.content).toBe(maxContent);
   });

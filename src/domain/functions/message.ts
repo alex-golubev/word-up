@@ -14,14 +14,18 @@ const MessageContentSchema = z
     message: `Message content exceeds maximum length of ${MESSAGE_CONTENT_MAX_LENGTH} characters`,
   });
 
+type MessageCreateParams = {
+  readonly conversationId: ConversationId;
+  readonly role: MessageRole;
+  readonly content: string;
+};
+
 /** @throws {Error} If content is empty or exceeds 10,000 characters */
-export const messageCreate = (conversationId: ConversationId, role: MessageRole, content: string): Message => {
-  MessageContentSchema.parse(content);
+export const messageCreate = (params: MessageCreateParams): Message => {
+  MessageContentSchema.parse(params.content);
   return {
     id: makeMessageId(randomUUID()),
-    conversationId,
-    role,
-    content,
+    ...params,
     createdAt: new Date(),
   };
 };

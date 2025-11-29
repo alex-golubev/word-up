@@ -67,7 +67,7 @@ import { chain, map } from 'fp-ts/TaskEither';
 export const sendMessageUseCase = (params, deps): TaskEither<Error, Message> =>
   pipe(
     deps.getConversation(params.conversationId),
-    map((conv) => messageCreate(conv.id, params.role, params.content)),
+    map((conv) => messageCreate({ conversationId: conv.id, role: params.role, content: params.content })),
     chain((msg) => deps.saveMessage(msg))
   );
 ```

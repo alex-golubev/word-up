@@ -1,33 +1,27 @@
 import * as E from 'fp-ts/Either';
 import type { DBClient } from '~/infrastructure/db/client';
-import { conversationEffects } from '~/infrastructure/effects/conversation.effects';
+import { createConversationEffects } from '~/infrastructure/effects/conversation.effects';
+import type { Conversation } from '~/domain/types';
 import {
   TEST_USER_ID,
   TEST_SCENARIO_ID,
   TEST_CONVERSATION_ID,
+  createTestConversation,
   createTestConversationRow,
   createMockDB,
 } from '~/test/fixtures';
 
-const createTestParams = () => ({
-  id: TEST_CONVERSATION_ID,
-  userId: TEST_USER_ID,
-  scenarioId: TEST_SCENARIO_ID,
-  targetLanguage: 'en' as const,
-  userLevel: 'beginner' as const,
-});
-
-describe('conversationEffects', () => {
-  describe('createConversation', () => {
-    it('should create conversation and return it', async () => {
+describe('createConversationEffects', () => {
+  describe('saveConversation', () => {
+    it('should save conversation and return it', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-      const params = createTestParams();
+      const conversation = createTestConversation();
       const row = createTestConversationRow();
 
       db._mocks.mockReturning.mockResolvedValue([row]);
 
-      const effects = conversationEffects(db);
-      const result = await effects.createConversation(params)();
+      const effects = createConversationEffects(db);
+      const result = await effects.saveConversation(conversation)();
 
       expect(E.isRight(result)).toBe(true);
       if (E.isRight(result)) {
@@ -40,31 +34,31 @@ describe('conversationEffects', () => {
 
     it('should return error when insert returns no rows', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-      const params = createTestParams();
+      const conversation = createTestConversation();
 
       db._mocks.mockReturning.mockResolvedValue([]);
 
-      const effects = conversationEffects(db);
-      const result = await effects.createConversation(params)();
+      const effects = createConversationEffects(db);
+      const result = await effects.saveConversation(conversation)();
 
       expect(E.isLeft(result)).toBe(true);
       if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to create conversation');
+        expect(result.left.message).toBe('Failed to save conversation');
       }
     });
 
     it('should return error when database throws', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-      const params = createTestParams();
+      const conversation = createTestConversation();
 
       db._mocks.mockReturning.mockRejectedValue(new Error('DB error'));
 
-      const effects = conversationEffects(db);
-      const result = await effects.createConversation(params)();
+      const effects = createConversationEffects(db);
+      const result = await effects.saveConversation(conversation)();
 
       expect(E.isLeft(result)).toBe(true);
       if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to create conversation');
+        expect(result.left.message).toBe('Failed to save conversation');
       }
     });
   });
@@ -76,7 +70,7 @@ describe('conversationEffects', () => {
 
       db._mocks.mockWhere.mockResolvedValue([row]);
 
-      const effects = conversationEffects(db);
+      const effects = createConversationEffects(db);
       const result = await effects.getConversation(TEST_CONVERSATION_ID)();
 
       expect(E.isRight(result)).toBe(true);
@@ -92,7 +86,7 @@ describe('conversationEffects', () => {
 
       db._mocks.mockWhere.mockResolvedValue([]);
 
-      const effects = conversationEffects(db);
+      const effects = createConversationEffects(db);
       const result = await effects.getConversation(TEST_CONVERSATION_ID)();
 
       expect(E.isLeft(result)).toBe(true);
@@ -106,7 +100,7 @@ describe('conversationEffects', () => {
 
       db._mocks.mockWhere.mockRejectedValue(new Error('DB error'));
 
-      const effects = conversationEffects(db);
+      const effects = createConversationEffects(db);
       const result = await effects.getConversation(TEST_CONVERSATION_ID)();
 
       expect(E.isLeft(result)).toBe(true);
