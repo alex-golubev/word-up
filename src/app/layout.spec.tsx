@@ -2,8 +2,11 @@ import { render, screen } from '@testing-library/react';
 import RootLayout from './layout';
 
 jest.mock('next/font/google', () => ({
-  Geist: () => ({ variable: '--font-geist-sans' }),
-  Geist_Mono: () => ({ variable: '--font-geist-mono' }),
+  Inter: () => ({ className: 'inter-font' }),
+}));
+
+jest.mock('~/presentation/components/TrpcProvider', () => ({
+  TrpcProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 const originalError = console.error;
@@ -44,7 +47,7 @@ describe('RootLayout', () => {
     expect(html).toHaveAttribute('lang', 'en');
   });
 
-  it('should apply font variables to body', () => {
+  it('should apply inter font class to body', () => {
     render(
       <RootLayout>
         <div>Content</div>
@@ -52,8 +55,7 @@ describe('RootLayout', () => {
     );
 
     const body = document.querySelector('body');
-    expect(body).toHaveClass('--font-geist-sans');
-    expect(body).toHaveClass('--font-geist-mono');
+    expect(body).toHaveClass('inter-font');
     expect(body).toHaveClass('antialiased');
   });
 });
