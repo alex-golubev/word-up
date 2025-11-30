@@ -12,7 +12,10 @@ export const appErrorToTRPC = (error: AppError): TRPCError => {
     case 'ValidationError':
       return new TRPCError({ code: 'BAD_REQUEST', message: getErrorMessage(error) });
     case 'InsertFailed':
+      console.error('[InsertFailed]', error.entity, error.cause);
+      return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
     case 'DbError':
+      console.error('[DbError]', error.cause);
       return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
   }
 };

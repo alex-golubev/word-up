@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { publicProcedure, router } from '~/presentation/trpc/trpc';
-import { createConversationEffects } from '~/infrastructure/effects/conversation.effects';
 import {
   ConversationIdSchema,
   LanguageSchema,
@@ -12,7 +11,7 @@ import {
 } from '~/domain/types';
 import { createConversationUseCase, getConversationUseCase, sendMessageUseCase } from '~/application/use-cases';
 import { safeHandler } from '~/presentation/trpc/errors';
-import { createMessageEffects } from '~/infrastructure/effects';
+import { createAppEnv } from '~/infrastructure/env';
 
 const CreateConversationInputSchema = z.object({
   userId: UserIdSchema,
@@ -32,27 +31,13 @@ const SendMessageInputSchema = z.object({
 export const chatRouter = router({
   createConversation: publicProcedure
     .input(CreateConversationInputSchema)
-    .mutation(
-      safeHandler(({ ctx, input }) =>
-        createConversationUseCase(input, { saveConversation: createConversationEffects(ctx.db).saveConversation })
-      )
-    ),
+    .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(createAppEnv(ctx.db)))),
 
-  getConversation: publicProcedure.input(GetConversationInputSchema).mutation(
-    safeHandler(({ ctx, input }) =>
-      getConversationUseCase(input.conversationId, {
-        getConversation: createConversationEffects(ctx.db).getConversation,
-        getMessagesByConversation: createMessageEffects(ctx.db).getMessagesByConversation,
-      })
-    )
-  ),
+  getConversation: publicProcedure
+    .input(GetConversationInputSchema)
+    .query(safeHandler(({ ctx, input }) => getConversationUseCase(input.conversationId)(createAppEnv(ctx.db)))),
 
-  sendMessage: publicProcedure.input(SendMessageInputSchema).mutation(
-    safeHandler(({ ctx, input }) =>
-      sendMessageUseCase(input, {
-        getConversation: createConversationEffects(ctx.db).getConversation,
-        saveMessage: createMessageEffects(ctx.db).saveMessage,
-      })
-    )
-  ),
+  sendMessage: publicProcedure
+    .input(SendMessageInputSchema)
+    .mutation(safeHandler(({ ctx, input }) => sendMessageUseCase(input)(createAppEnv(ctx.db)))),
 });

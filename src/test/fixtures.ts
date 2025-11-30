@@ -68,13 +68,16 @@ export const createTestConversationRow = (overrides?: Record<string, unknown>) =
 });
 
 // Mock DB client factory
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MockFn = jest.Mock<any, any>;
+
 export const createMockDB = () => {
-  const mockReturning = jest.fn();
+  const mockReturning: MockFn = jest.fn();
   const mockValues = jest.fn(() => ({ returning: mockReturning }));
   const mockInsert = jest.fn(() => ({ values: mockValues }));
 
-  const mockOrderBy = jest.fn();
-  const mockWhere = jest.fn(() => ({ orderBy: mockOrderBy }));
+  const mockOrderBy: MockFn = jest.fn();
+  const mockWhere: MockFn = jest.fn(() => ({ orderBy: mockOrderBy }));
   const mockFrom = jest.fn(() => ({ where: mockWhere }));
   const mockSelect = jest.fn(() => ({ from: mockFrom }));
 

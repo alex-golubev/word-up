@@ -4,20 +4,17 @@ import type { Message } from '~/domain/types';
 import { insertFailed, notFound } from '~/domain/types';
 import { sendMessageUseCase } from '~/application/use-cases/send-message';
 import { TEST_CONVERSATION_ID, createTestConversation, createTestMessage } from '~/test/fixtures';
+import { createMockEnv } from '~/test/mock-env';
 
 describe('sendMessageUseCase', () => {
-  const createMockDeps = () => ({
-    getConversation: jest.fn(),
-    saveMessage: jest.fn(),
-  });
-
   it('should send message successfully', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
     const savedMessage = createTestMessage({ content: 'Hello, world!' });
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.saveMessage.mockReturnValue(right(savedMessage));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      saveMessage: jest.fn().mockReturnValue(right(savedMessage)),
+    });
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -25,7 +22,7 @@ describe('sendMessageUseCase', () => {
       content: 'Hello, world!',
     };
 
-    const result = await sendMessageUseCase(params, deps)();
+    const result = await sendMessageUseCase(params)(env)();
 
     expect(isRight(result)).toBe(true);
     if (isRight(result)) {
@@ -36,11 +33,12 @@ describe('sendMessageUseCase', () => {
   });
 
   it('should pass correct conversation id to messageCreate', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.saveMessage.mockImplementation((msg: Message) => right(msg));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      saveMessage: jest.fn().mockImplementation((msg: Message) => right(msg)),
+    });
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -48,7 +46,7 @@ describe('sendMessageUseCase', () => {
       content: 'Hi there!',
     };
 
-    const result = await sendMessageUseCase(params, deps)();
+    const result = await sendMessageUseCase(params)(env)();
 
     expect(isRight(result)).toBe(true);
     if (isRight(result)) {
@@ -58,9 +56,9 @@ describe('sendMessageUseCase', () => {
   });
 
   it('should return error when conversation not found', async () => {
-    const deps = createMockDeps();
-
-    deps.getConversation.mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID)));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID))),
+    });
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -68,21 +66,22 @@ describe('sendMessageUseCase', () => {
       content: 'Hello!',
     };
 
-    const result = await sendMessageUseCase(params, deps)();
+    const result = await sendMessageUseCase(params)(env)();
 
     expect(isLeft(result)).toBe(true);
     if (isLeft(result)) {
       expect(result.left._tag).toBe('NotFound');
     }
-    expect(deps.saveMessage).not.toHaveBeenCalled();
+    expect(env.saveMessage).not.toHaveBeenCalled();
   });
 
   it('should return error when save message fails', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.saveMessage.mockReturnValue(left(insertFailed('Message')));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      saveMessage: jest.fn().mockReturnValue(left(insertFailed('Message'))),
+    });
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -90,7 +89,7 @@ describe('sendMessageUseCase', () => {
       content: 'Hello!',
     };
 
-    const result = await sendMessageUseCase(params, deps)();
+    const result = await sendMessageUseCase(params)(env)();
 
     expect(isLeft(result)).toBe(true);
     if (isLeft(result)) {
@@ -99,10 +98,11 @@ describe('sendMessageUseCase', () => {
   });
 
   it('should throw error for empty content', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+    });
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -110,14 +110,15 @@ describe('sendMessageUseCase', () => {
       content: '',
     };
 
-    await expect(sendMessageUseCase(params, deps)()).rejects.toThrow('Message content cannot be empty');
+    await expect(sendMessageUseCase(params)(env)()).rejects.toThrow('Message content cannot be empty');
   });
 
   it('should throw error for content exceeding max length', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+    });
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -125,7 +126,7 @@ describe('sendMessageUseCase', () => {
       content: 'a'.repeat(10001),
     };
 
-    await expect(sendMessageUseCase(params, deps)()).rejects.toThrow(
+    await expect(sendMessageUseCase(params)(env)()).rejects.toThrow(
       'Message content exceeds maximum length of 10000 characters'
     );
   });
