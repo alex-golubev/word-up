@@ -1,12 +1,14 @@
-import * as E from 'fp-ts/Either';
-import * as TE from 'fp-ts/TaskEither';
+import { isLeft, isRight } from 'fp-ts/Either';
+import type { TaskEither } from 'fp-ts/TaskEither';
+import { left, right } from 'fp-ts/TaskEither';
 import { createConversationUseCase } from '~/application/use-cases/create-conversation';
 import { TEST_SCENARIO_ID, TEST_USER_ID, createTestConversation } from '~/test/fixtures';
-import type { Conversation } from '~/domain/types';
+import type { AppError, Conversation } from '~/domain/types';
+import { insertFailed } from '~/domain/types';
 
 describe('createConversationUseCase', () => {
   const createMockDeps = () => ({
-    saveConversation: jest.fn<ReturnType<typeof TE.right<Error, Conversation>>, [Conversation]>(),
+    saveConversation: jest.fn<TaskEither<AppError, Conversation>, [Conversation]>(),
   });
 
   const defaultParams = {
@@ -20,11 +22,11 @@ describe('createConversationUseCase', () => {
     const deps = createMockDeps();
     const savedConversation = createTestConversation();
 
-    deps.saveConversation.mockReturnValue(TE.right(savedConversation));
+    deps.saveConversation.mockReturnValue(right(savedConversation));
 
     const result = await createConversationUseCase(defaultParams, deps)();
 
-    expect(E.isRight(result)).toBe(true);
+    expect(isRight(result)).toBe(true);
     expect(deps.saveConversation).toHaveBeenCalledTimes(1);
 
     const calledWith = deps.saveConversation.mock.calls[0][0];
@@ -37,7 +39,7 @@ describe('createConversationUseCase', () => {
 
   it('should generate unique conversation id via domain function', async () => {
     const deps = createMockDeps();
-    deps.saveConversation.mockReturnValue(TE.right(createTestConversation()));
+    deps.saveConversation.mockReturnValue(right(createTestConversation()));
 
     await createConversationUseCase(defaultParams, deps)();
     const firstCallId = deps.saveConversation.mock.calls[0][0].id;
@@ -51,19 +53,19 @@ describe('createConversationUseCase', () => {
   it('should return error when saveConversation fails', async () => {
     const deps = createMockDeps();
 
-    deps.saveConversation.mockReturnValue(TE.left(new Error('Failed to save conversation')));
+    deps.saveConversation.mockReturnValue(left(insertFailed('Conversation')));
 
     const result = await createConversationUseCase(defaultParams, deps)();
 
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.message).toBe('Failed to save conversation');
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('InsertFailed');
     }
   });
 
   it('should create conversation with different language and level', async () => {
     const deps = createMockDeps();
-    deps.saveConversation.mockReturnValue(TE.right(createTestConversation()));
+    deps.saveConversation.mockReturnValue(right(createTestConversation()));
 
     const params = {
       userId: TEST_USER_ID,

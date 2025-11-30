@@ -1,10 +1,12 @@
 import type { TaskEither } from 'fp-ts/TaskEither';
-import { tryCatch } from 'fp-ts/TaskEither';
+import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/function';
 import { eq } from 'drizzle-orm';
 import { makeConversationId, makeScenarioId, makeUserId } from '~/domain/types';
+import type { AppError, Conversation, ConversationId } from '~/domain/types';
+import { dbError, insertFailed, notFound } from '~/domain/types';
 import { conversations } from '~/infrastructure/db/schemas';
 import type { DBClient } from '~/infrastructure/db/client';
-import type { Conversation, ConversationId } from '~/domain/types';
 
 type ConversationRow = typeof conversations.$inferSelect;
 
@@ -19,29 +21,25 @@ const mapRowToConversation = (row: ConversationRow): Conversation => ({
   updatedAt: row.updatedAt,
 });
 
-/**
- * Creates a ConversationEffects instance with database operations.
- * @param db - Database client for executing queries.
- */
 export const createConversationEffects = (db: DBClient) => ({
-  saveConversation: (conversation: Conversation): TaskEither<Error, Conversation> =>
-    tryCatch(
-      async (): Promise<Conversation> => {
-        const [inserted] = await db.insert(conversations).values(conversation).returning();
-        if (!inserted) throw new Error('Insert returned no rows');
-        return mapRowToConversation(inserted);
-      },
-      (error) => new Error('Failed to save conversation', { cause: error })
+  saveConversation: (conversation: Conversation): TaskEither<AppError, Conversation> =>
+    pipe(
+      tryCatch(
+        () => db.insert(conversations).values(conversation).returning(),
+        (error) => dbError(error)
+      ),
+      chain(([inserted]) => (inserted ? right(mapRowToConversation(inserted)) : left(insertFailed('Conversation'))))
     ),
 
-  getConversation: (conversationId: ConversationId): TaskEither<Error, Conversation> =>
-    tryCatch(
-      async (): Promise<Conversation> => {
-        const [selected] = await db.select().from(conversations).where(eq(conversations.id, conversationId));
-        if (!selected) throw new Error('Conversation not found');
-        return mapRowToConversation(selected);
-      },
-      (error) => new Error('Failed to get conversation', { cause: error })
+  getConversation: (conversationId: ConversationId): TaskEither<AppError, Conversation> =>
+    pipe(
+      tryCatch(
+        () => db.select().from(conversations).where(eq(conversations.id, conversationId)),
+        (error) => dbError(error)
+      ),
+      chain(([selected]) =>
+        selected ? right(mapRowToConversation(selected)) : left(notFound('Conversation', conversationId))
+      )
     ),
 });
 

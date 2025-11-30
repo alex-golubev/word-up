@@ -33,17 +33,23 @@ npm run db:studio    # Open Drizzle Studio GUI
 The codebase follows **Clean Architecture** with three distinct layers:
 
 ### Domain Layer (`src/domain/`)
+
 Pure business logic with no external dependencies.
+
 - **`types/`** - Branded types using Zod schemas (e.g., `UserId`, `ConversationId`, `MessageId`)
 - **`functions/`** - Pure domain functions (e.g., `messageCreate`, `messageTakeLast`)
 
 ### Application Layer (`src/application/`)
+
 Use cases that orchestrate domain logic with effects.
+
 - **`use-cases/`** - Business operations returning `TaskEither<Error, T>` for typed async error handling
 - Dependencies are injected as parameters for testability
 
 ### Infrastructure Layer (`src/infrastructure/`)
+
 External concerns (database, APIs).
+
 - **`db/schemas/`** - Drizzle ORM table definitions
 - **`db/client.ts`** - Database connection (Neon serverless)
 - **`effects/`** - Side-effectful operations wrapped in `TaskEither`
@@ -51,20 +57,36 @@ External concerns (database, APIs).
 ## Key Patterns
 
 ### Branded Types with Zod
+
 Domain IDs use Zod's `.brand()` for type safety:
+
 ```typescript
 const UserIdSchema = z.guid({ error: 'Invalid UserId' }).brand('UserId');
 export type UserId = z.infer<typeof UserIdSchema>;
 export const makeUserId = (id: string): UserId => UserIdSchema.parse(id);
 ```
 
+### Typed Errors with Discriminated Union
+
+All errors use `AppError` discriminated union (`src/domain/errors.ts`):
+
+```typescript
+type AppError =
+  | { readonly _tag: 'NotFound'; readonly entity: string; readonly id: string }
+  | { readonly _tag: 'InsertFailed'; readonly entity: string; readonly cause?: unknown }
+  | { readonly _tag: 'ValidationError'; readonly message: string }
+  | { readonly _tag: 'DbError'; readonly cause: unknown };
+```
+
 ### fp-ts TaskEither for Async Error Handling
-All async operations use `TaskEither<Error, T>` instead of try/catch:
+
+All async operations use `TaskEither<AppError, T>` instead of try/catch. Use named imports:
+
 ```typescript
 import { pipe } from 'fp-ts/function';
 import { chain, map } from 'fp-ts/TaskEither';
 
-export const sendMessageUseCase = (params, deps): TaskEither<Error, Message> =>
+export const sendMessageUseCase = (params, deps): TaskEither<AppError, Message> =>
   pipe(
     deps.getConversation(params.conversationId),
     map((conv) => messageCreate({ conversationId: conv.id, role: params.role, content: params.content })),
@@ -73,16 +95,38 @@ export const sendMessageUseCase = (params, deps): TaskEither<Error, Message> =>
 ```
 
 ### Dependency Injection in Use Cases
+
 Use cases receive dependencies as a second parameter for easy mocking:
+
 ```typescript
 type SendMessageDeps = {
-  readonly getConversation: (id: ConversationId) => TaskEither<Error, Conversation>;
-  readonly saveMessage: (message: Message) => TaskEither<Error, Message>;
+  readonly getConversation: (id: ConversationId) => TaskEither<AppError, Conversation>;
+  readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
 };
 ```
 
+### tRPC Error Handling
+
+Use `safeHandler` wrapper for mutations/queries (`src/presentation/trpc/errors.ts`):
+
+```typescript
+import { safeHandler } from '~/presentation/trpc/errors';
+
+export const chatRouter = router({
+  createConversation: publicProcedure
+    .input(CreateConversationInputSchema)
+    .mutation(
+      safeHandler(({ ctx, input }) =>
+        createConversationUseCase(input, { saveConversation: createConversationEffects(ctx.db).saveConversation })
+      )
+    ),
+});
+```
+
 ### Test Fixtures
+
 Use `src/test/fixtures.ts` for consistent test data:
+
 ```typescript
 import { createTestMessage, createTestConversation, TEST_CONVERSATION_ID } from '~/test/fixtures';
 ```
@@ -99,3 +143,5 @@ import { createTestMessage, createTestConversation, TEST_CONVERSATION_ID } from 
 - 100 character line width
 - Trailing commas (ES5 style)
 - Requires newline at end of files
+- Use named imports from fp-ts: `import { isLeft, isRight } from 'fp-ts/Either'` (not `import * as E`)
+- Use `import { randomUUID } from 'node:crypto'` instead of `crypto.randomUUID()`
