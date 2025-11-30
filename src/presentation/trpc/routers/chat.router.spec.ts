@@ -8,12 +8,7 @@ jest.mock('~/utils/transformer', () => ({
 }));
 
 import { chatRouter } from '~/presentation/trpc/routers/chat.router';
-import {
-  TEST_UUID,
-  createMockDB,
-  createTestConversationRow,
-  createTestMessageRow,
-} from '~/test/fixtures';
+import { TEST_UUID, createMockDB, createTestConversationRow, createTestMessageRow } from '~/test/fixtures';
 
 const createCaller = (db: ReturnType<typeof createMockDB>) => {
   return chatRouter.createCaller({ db } as never);
@@ -106,9 +101,7 @@ describe('chatRouter', () => {
       const conversationRow = createTestConversationRow();
       const messageRow = createTestMessageRow();
 
-      mockDb._mocks.mockWhere.mockReturnValue(
-        createWhereResult([conversationRow], [messageRow])
-      );
+      mockDb._mocks.mockWhere.mockReturnValue(createWhereResult([conversationRow], [messageRow]));
 
       const caller = createCaller(mockDb);
       const result = await caller.getConversation({

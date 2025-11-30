@@ -1,10 +1,4 @@
-import {
-  notFound,
-  insertFailed,
-  validationError,
-  dbError,
-  getErrorMessage,
-} from '~/domain/errors';
+import { notFound, insertFailed, validationError, dbError, getErrorMessage } from '~/domain/errors';
 
 describe('error constructors', () => {
   describe('notFound', () => {
