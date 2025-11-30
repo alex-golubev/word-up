@@ -41,10 +41,11 @@ Pure business logic with no external dependencies.
 
 ### Application Layer (`src/application/`)
 
-Use cases that orchestrate domain logic with effects.
+Use cases that orchestrate domain logic with effects using the Reader pattern.
 
-- **`use-cases/`** - Business operations returning `TaskEither<Error, T>` for typed async error handling
-- Dependencies are injected as parameters for testability
+- **`use-cases/`** - Business operations returning `AppReader<T>` (Reader pattern with `TaskEither`)
+- **`env.ts`** - `AppEnv` type defining all available dependencies
+- **`reader.ts`** - Helper types for `ReaderTaskEither`
 
 ### Infrastructure Layer (`src/infrastructure/`)
 
@@ -53,6 +54,7 @@ External concerns (database, APIs).
 - **`db/schemas/`** - Drizzle ORM table definitions
 - **`db/client.ts`** - Database connection (Neon serverless)
 - **`effects/`** - Side-effectful operations wrapped in `TaskEither`
+- **`env.ts`** - Factory function `createAppEnv(db)` that wires all effects together
 
 ## Key Patterns
 
@@ -85,41 +87,48 @@ All async operations use `TaskEither<AppError, T>` instead of try/catch. Use nam
 ```typescript
 import { pipe } from 'fp-ts/function';
 import { chain, map } from 'fp-ts/TaskEither';
-
-export const sendMessageUseCase = (params, deps): TaskEither<AppError, Message> =>
-  pipe(
-    deps.getConversation(params.conversationId),
-    map((conv) => messageCreate({ conversationId: conv.id, role: params.role, content: params.content })),
-    chain((msg) => deps.saveMessage(msg))
-  );
 ```
 
-### Dependency Injection in Use Cases
+### Reader Pattern for Dependencies
 
-Use cases receive dependencies as a second parameter for easy mocking:
+Use cases use the Reader pattern to access dependencies from `AppEnv`. Each use case returns an `AppReader<T>` which is a function that takes the environment and returns a `TaskEither`:
 
 ```typescript
-type SendMessageDeps = {
+import type { AppReader } from '~/application/reader';
+
+export const sendMessageUseCase =
+  (params: SendMessageParams): AppReader<Message> =>
+  (env) =>
+    pipe(
+      env.getConversation(params.conversationId),
+      map((conv) => messageCreate({ conversationId: conv.id, role: params.role, content: params.content })),
+      chain((msg) => env.saveMessage(msg))
+    );
+```
+
+The `AppEnv` type defines all available dependencies (`src/application/env.ts`):
+
+```typescript
+export type AppEnv = {
   readonly getConversation: (id: ConversationId) => TaskEither<AppError, Conversation>;
+  readonly getMessagesByConversation: (id: ConversationId) => TaskEither<AppError, readonly Message[]>;
+  readonly saveConversation: (conversation: Conversation) => TaskEither<AppError, Conversation>;
   readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
 };
 ```
 
 ### tRPC Error Handling
 
-Use `safeHandler` wrapper for mutations/queries (`src/presentation/trpc/errors.ts`):
+Use `safeHandler` wrapper for mutations/queries (`src/presentation/trpc/errors.ts`). The `createAppEnv` factory wires all dependencies:
 
 ```typescript
 import { safeHandler } from '~/presentation/trpc/errors';
+import { createAppEnv } from '~/infrastructure/env';
 
 export const chatRouter = router({
   createConversation: publicProcedure
     .input(CreateConversationInputSchema)
-    .mutation(
-      safeHandler(({ ctx, input }) =>
-        createConversationUseCase(input, { saveConversation: createConversationEffects(ctx.db).saveConversation })
-      )
-    ),
+    .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(createAppEnv(ctx.db)))),
 });
 ```
 
@@ -129,6 +138,22 @@ Use `src/test/fixtures.ts` for consistent test data:
 
 ```typescript
 import { createTestMessage, createTestConversation, TEST_CONVERSATION_ID } from '~/test/fixtures';
+```
+
+### Testing Use Cases with Reader Pattern
+
+Use `createMockEnv` to create a mock environment for testing use cases:
+
+```typescript
+import { createMockEnv } from '~/test/mock-env';
+import { right } from 'fp-ts/TaskEither';
+
+const env = createMockEnv({
+  getConversation: jest.fn().mockReturnValue(right(conversation)),
+  saveMessage: jest.fn().mockReturnValue(right(savedMessage)),
+});
+
+const result = await sendMessageUseCase(params)(env)();
 ```
 
 ## TypeScript Configuration

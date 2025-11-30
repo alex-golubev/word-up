@@ -3,22 +3,19 @@ import { left, right } from 'fp-ts/TaskEither';
 import { getConversationUseCase } from '~/application/use-cases/get-conversation';
 import { TEST_CONVERSATION_ID, createTestConversation, createTestMessage } from '~/test/fixtures';
 import { dbError, notFound } from '~/domain/types';
+import { createMockEnv } from '~/test/mock-env';
 
 describe('getConversationUseCase', () => {
-  const createMockDeps = () => ({
-    getConversation: jest.fn(),
-    getMessagesByConversation: jest.fn(),
-  });
-
   it('should return conversation with messages successfully', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
     const messages = [createTestMessage({ content: 'Hello' }), createTestMessage({ content: 'Hi there' })];
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(right(messages));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      getMessagesByConversation: jest.fn().mockReturnValue(right(messages)),
+    });
 
-    const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
+    const result = await getConversationUseCase(TEST_CONVERSATION_ID)(env)();
 
     expect(isRight(result)).toBe(true);
     if (isRight(result)) {
@@ -30,13 +27,14 @@ describe('getConversationUseCase', () => {
   });
 
   it('should return conversation with empty messages array', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(right([]));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      getMessagesByConversation: jest.fn().mockReturnValue(right([])),
+    });
 
-    const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
+    const result = await getConversationUseCase(TEST_CONVERSATION_ID)(env)();
 
     expect(isRight(result)).toBe(true);
     if (isRight(result)) {
@@ -45,12 +43,12 @@ describe('getConversationUseCase', () => {
   });
 
   it('should return error when conversation not found', async () => {
-    const deps = createMockDeps();
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID))),
+      getMessagesByConversation: jest.fn().mockReturnValue(right([])),
+    });
 
-    deps.getConversation.mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID)));
-    deps.getMessagesByConversation.mockReturnValue(right([]));
-
-    const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
+    const result = await getConversationUseCase(TEST_CONVERSATION_ID)(env)();
 
     expect(isLeft(result)).toBe(true);
     if (isLeft(result)) {
@@ -59,13 +57,14 @@ describe('getConversationUseCase', () => {
   });
 
   it('should return error when getting messages fails', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(left(dbError(new Error('DB error'))));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      getMessagesByConversation: jest.fn().mockReturnValue(left(dbError(new Error('DB error')))),
+    });
 
-    const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
+    const result = await getConversationUseCase(TEST_CONVERSATION_ID)(env)();
 
     expect(isLeft(result)).toBe(true);
     if (isLeft(result)) {
@@ -74,15 +73,16 @@ describe('getConversationUseCase', () => {
   });
 
   it('should call both dependencies with correct conversation id', async () => {
-    const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(right([]));
+    const env = createMockEnv({
+      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      getMessagesByConversation: jest.fn().mockReturnValue(right([])),
+    });
 
-    await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
+    await getConversationUseCase(TEST_CONVERSATION_ID)(env)();
 
-    expect(deps.getConversation).toHaveBeenCalledWith(TEST_CONVERSATION_ID);
-    expect(deps.getMessagesByConversation).toHaveBeenCalledWith(TEST_CONVERSATION_ID);
+    expect(env.getConversation).toHaveBeenCalledWith(TEST_CONVERSATION_ID);
+    expect(env.getMessagesByConversation).toHaveBeenCalledWith(TEST_CONVERSATION_ID);
   });
 });

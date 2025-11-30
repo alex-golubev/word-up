@@ -1,25 +1,22 @@
 import { chain, map } from 'fp-ts/TaskEither';
 import { pipe } from 'fp-ts/function';
 import { messageCreate } from '~/domain/functions/message';
-import type { TaskEither } from 'fp-ts/TaskEither';
-import type { AppError, Conversation, ConversationId, Message, MessageRole } from '~/domain/types';
+import type { ConversationId, Message, MessageRole } from '~/domain/types';
+import type { AppReader } from '~/application/reader';
 
-type SendMessageDeps = {
-  readonly getConversation: (id: ConversationId) => TaskEither<AppError, Conversation>;
-  readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
-};
-
-type SendMessageParams = {
+export type SendMessageParams = {
   readonly conversationId: ConversationId;
   readonly role: MessageRole;
   readonly content: string;
 };
 
-export const sendMessageUseCase = (params: SendMessageParams, deps: SendMessageDeps): TaskEither<AppError, Message> =>
-  pipe(
-    deps.getConversation(params.conversationId),
-    map((conversation) =>
-      messageCreate({ conversationId: conversation.id, role: params.role, content: params.content })
-    ),
-    chain((message) => deps.saveMessage(message))
-  );
+export const sendMessageUseCase =
+  (params: SendMessageParams): AppReader<Message> =>
+  (env) =>
+    pipe(
+      env.getConversation(params.conversationId),
+      map((conversation) =>
+        messageCreate({ conversationId: conversation.id, role: params.role, content: params.content })
+      ),
+      chain((message) => env.saveMessage(message))
+    );

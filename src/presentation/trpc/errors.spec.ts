@@ -23,22 +23,34 @@ describe('appErrorToTRPC', () => {
     expect(trpcError.message).toBe('Invalid email format');
   });
 
-  it('should convert InsertFailed to INTERNAL_SERVER_ERROR TRPCError', () => {
-    const error = insertFailed('Message');
+  it('should convert InsertFailed to INTERNAL_SERVER_ERROR TRPCError and log error', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const cause = new Error('Constraint violation');
+    const error = insertFailed('Message', cause);
+
     const trpcError = appErrorToTRPC(error);
 
     expect(trpcError).toBeInstanceOf(TRPCError);
     expect(trpcError.code).toBe('INTERNAL_SERVER_ERROR');
     expect(trpcError.message).toBe('Failed to insert Message');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[InsertFailed]', 'Message', cause);
+
+    consoleErrorSpy.mockRestore();
   });
 
-  it('should convert DbError to INTERNAL_SERVER_ERROR TRPCError', () => {
-    const error = dbError(new Error('Connection failed'));
+  it('should convert DbError to INTERNAL_SERVER_ERROR TRPCError and log error', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const cause = new Error('Connection failed');
+    const error = dbError(cause);
+
     const trpcError = appErrorToTRPC(error);
 
     expect(trpcError).toBeInstanceOf(TRPCError);
     expect(trpcError.code).toBe('INTERNAL_SERVER_ERROR');
     expect(trpcError.message).toBe('Database operation failed');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[DbError]', cause);
+
+    consoleErrorSpy.mockRestore();
   });
 });
 
@@ -75,7 +87,9 @@ describe('safeHandler', () => {
   const mockContext = { db: {} } as Context;
 
   it('should return result when TaskEither succeeds', async () => {
-    const handler = safeHandler(({ input }) => right({ result: input.value * 2 }));
+    const handler = safeHandler(({ input }: { ctx: Context; input: { value: number } }) =>
+      right({ result: input.value * 2 })
+    );
 
     const result = await handler({ ctx: mockContext, input: { value: 21 } });
 

@@ -35,6 +35,8 @@ const config: Config = {
     '!src/infrastructure/db/client.ts',
     '!src/presentation/trpc/context.ts',
     '!src/utils/transformer.ts',
+    '!src/application/env.ts',
+    '!src/application/reader.ts',
   ],
 
   // The directory where Jest should output its coverage files
