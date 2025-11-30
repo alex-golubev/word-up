@@ -20,9 +20,16 @@ export const makeMessageId = (id: string): MessageId => MessageIdSchema.parse(id
 export const makeScenarioId = (id: string): ScenarioId => ScenarioIdSchema.parse(id);
 
 export const MessageRoleSchema = z.enum(['user', 'assistant']);
+export const MessageContentSchema = z
+  .string()
+  .refine((val) => val.trim().length > 0, { message: 'Message content cannot be empty' })
+  .refine((val) => val.length <= 10000, {
+    message: 'Message content exceeds maximum length of 10000 characters',
+  });
 export const UserLevelSchema = z.enum(['beginner', 'intermediate', 'advanced']);
 export const LanguageSchema = z.enum(['en', 'ru', 'es', 'fr', 'de']);
 
 export type MessageRole = z.infer<typeof MessageRoleSchema>;
+export type MessageContent = z.infer<typeof MessageContentSchema>;
 export type UserLevel = z.infer<typeof UserLevelSchema>;
 export type Language = z.infer<typeof LanguageSchema>;

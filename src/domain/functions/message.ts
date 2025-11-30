@@ -1,18 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { pipe } from 'fp-ts/function';
 import { takeRight } from 'fp-ts/Array';
-import { z } from 'zod';
 import type { ConversationId, Message, MessageRole } from '~/domain/types';
-import { makeMessageId } from '~/domain/types';
-
-const MESSAGE_CONTENT_MAX_LENGTH = 10000;
-
-const MessageContentSchema = z
-  .string()
-  .refine((val) => val.trim().length > 0, { message: 'Message content cannot be empty' })
-  .refine((val) => val.length <= MESSAGE_CONTENT_MAX_LENGTH, {
-    message: `Message content exceeds maximum length of ${MESSAGE_CONTENT_MAX_LENGTH} characters`,
-  });
+import { makeMessageId, MessageContentSchema } from '~/domain/types';
 
 type MessageCreateParams = {
   readonly conversationId: ConversationId;
