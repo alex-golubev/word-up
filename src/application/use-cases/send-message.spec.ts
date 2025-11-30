@@ -1,6 +1,7 @@
-import * as E from 'fp-ts/Either';
-import * as TE from 'fp-ts/TaskEither';
+import { isLeft, isRight } from 'fp-ts/Either';
+import { left, right } from 'fp-ts/TaskEither';
 import type { Message } from '~/domain/types';
+import { insertFailed, notFound } from '~/domain/types';
 import { sendMessageUseCase } from '~/application/use-cases/send-message';
 import { TEST_CONVERSATION_ID, createTestConversation, createTestMessage } from '~/test/fixtures';
 
@@ -15,8 +16,8 @@ describe('sendMessageUseCase', () => {
     const conversation = createTestConversation();
     const savedMessage = createTestMessage({ content: 'Hello, world!' });
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.saveMessage.mockReturnValue(TE.right(savedMessage));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.saveMessage.mockReturnValue(right(savedMessage));
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -26,8 +27,8 @@ describe('sendMessageUseCase', () => {
 
     const result = await sendMessageUseCase(params, deps)();
 
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
+    expect(isRight(result)).toBe(true);
+    if (isRight(result)) {
       expect(result.right.content).toBe('Hello, world!');
       expect(result.right.role).toBe('user');
       expect(result.right.conversationId).toBe(TEST_CONVERSATION_ID);
@@ -38,8 +39,8 @@ describe('sendMessageUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.saveMessage.mockImplementation((msg: Message) => TE.right(msg));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.saveMessage.mockImplementation((msg: Message) => right(msg));
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -49,8 +50,8 @@ describe('sendMessageUseCase', () => {
 
     const result = await sendMessageUseCase(params, deps)();
 
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
+    expect(isRight(result)).toBe(true);
+    if (isRight(result)) {
       expect(result.right.conversationId).toBe(TEST_CONVERSATION_ID);
       expect(result.right.role).toBe('assistant');
     }
@@ -59,7 +60,7 @@ describe('sendMessageUseCase', () => {
   it('should return error when conversation not found', async () => {
     const deps = createMockDeps();
 
-    deps.getConversation.mockReturnValue(TE.left(new Error('Conversation not found')));
+    deps.getConversation.mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID)));
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -69,9 +70,9 @@ describe('sendMessageUseCase', () => {
 
     const result = await sendMessageUseCase(params, deps)();
 
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.message).toBe('Conversation not found');
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('NotFound');
     }
     expect(deps.saveMessage).not.toHaveBeenCalled();
   });
@@ -80,8 +81,8 @@ describe('sendMessageUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.saveMessage.mockReturnValue(TE.left(new Error('Failed to save message')));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.saveMessage.mockReturnValue(left(insertFailed('Message')));
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -91,9 +92,9 @@ describe('sendMessageUseCase', () => {
 
     const result = await sendMessageUseCase(params, deps)();
 
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.message).toBe('Failed to save message');
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('InsertFailed');
     }
   });
 
@@ -101,7 +102,7 @@ describe('sendMessageUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
+    deps.getConversation.mockReturnValue(right(conversation));
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,
@@ -116,7 +117,7 @@ describe('sendMessageUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
+    deps.getConversation.mockReturnValue(right(conversation));
 
     const params = {
       conversationId: TEST_CONVERSATION_ID,

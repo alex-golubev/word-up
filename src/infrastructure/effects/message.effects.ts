@@ -1,10 +1,12 @@
 import type { TaskEither } from 'fp-ts/TaskEither';
-import { tryCatch } from 'fp-ts/TaskEither';
+import { chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/function';
 import { eq } from 'drizzle-orm';
 import { makeConversationId, makeMessageId } from '~/domain/types';
+import type { AppError, ConversationId, Message } from '~/domain/types';
+import { dbError, insertFailed } from '~/domain/types';
 import { messages } from '~/infrastructure/db/schemas';
 import type { DBClient } from '~/infrastructure/db/client';
-import type { ConversationId, Message } from '~/domain/types';
 
 type MessageRow = typeof messages.$inferSelect;
 
@@ -16,33 +18,23 @@ const mapRowToMessage = (row: MessageRow): Message => ({
   createdAt: row.createdAt,
 });
 
-/**
- * Creates a MessageEffects instance with database operations.
- * @param db - Database client for executing queries.
- */
 export const createMessageEffects = (db: DBClient) => ({
-  saveMessage: (message: Message): TaskEither<Error, Message> =>
-    tryCatch(
-      async (): Promise<Message> => {
-        const [inserted] = await db.insert(messages).values(message).returning();
-        if (!inserted) throw new Error('Insert returned no rows');
-        return mapRowToMessage(inserted);
-      },
-      (error) => new Error('Failed to save message', { cause: error })
+  saveMessage: (message: Message): TaskEither<AppError, Message> =>
+    pipe(
+      tryCatch(
+        () => db.insert(messages).values(message).returning(),
+        (error) => dbError(error)
+      ),
+      chain(([inserted]) => (inserted ? right(mapRowToMessage(inserted)) : left(insertFailed('Message'))))
     ),
 
-  getMessagesByConversation: (id: ConversationId): TaskEither<Error, readonly Message[]> =>
-    tryCatch(
-      async (): Promise<Message[]> => {
-        const selected = await db
-          .select()
-          .from(messages)
-          .where(eq(messages.conversationId, id))
-          .orderBy(messages.createdAt);
-
-        return selected.map(mapRowToMessage);
-      },
-      (error) => new Error('Failed to get messages', { cause: error })
+  getMessagesByConversation: (id: ConversationId): TaskEither<AppError, readonly Message[]> =>
+    pipe(
+      tryCatch(
+        () => db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(messages.createdAt),
+        (error) => dbError(error)
+      ),
+      map((rows) => rows.map(mapRowToMessage))
     ),
 });
 

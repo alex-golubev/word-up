@@ -3,17 +3,16 @@ import { makeConversationId } from '~/domain/types';
 import type { Conversation, Language, Message, ScenarioId, UserId, UserLevel } from '~/domain/types';
 import { messageAppend } from '~/domain/functions/message';
 
-export const conversationCreate = (
-  userId: UserId,
-  scenarioId: ScenarioId,
-  targetLanguage: Language,
-  userLevel: UserLevel
-): Conversation => ({
+type ConversationCreateParams = {
+  readonly userId: UserId;
+  readonly scenarioId: ScenarioId;
+  readonly targetLanguage: Language;
+  readonly userLevel: UserLevel;
+};
+
+export const conversationCreate = (params: ConversationCreateParams): Conversation => ({
   id: makeConversationId(randomUUID()),
-  userId,
-  scenarioId,
-  targetLanguage,
-  userLevel,
+  ...params,
   messages: [],
   createdAt: new Date(),
   updatedAt: new Date(),

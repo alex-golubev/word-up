@@ -8,8 +8,15 @@ import {
 } from '~/domain/functions/conversation';
 
 describe('conversationCreate', () => {
+  const defaultParams = {
+    userId: TEST_USER_ID,
+    scenarioId: TEST_SCENARIO_ID,
+    targetLanguage: 'en' as const,
+    userLevel: 'beginner' as const,
+  };
+
   it('should create a conversation with valid parameters', () => {
-    const conversation = conversationCreate(TEST_USER_ID, TEST_SCENARIO_ID, 'en', 'beginner');
+    const conversation = conversationCreate(defaultParams);
 
     expect(conversation.userId).toBe(TEST_USER_ID);
     expect(conversation.scenarioId).toBe(TEST_SCENARIO_ID);
@@ -22,16 +29,16 @@ describe('conversationCreate', () => {
   });
 
   it('should create conversation with different languages', () => {
-    const conversationRu = conversationCreate(TEST_USER_ID, TEST_SCENARIO_ID, 'ru', 'intermediate');
-    const conversationEs = conversationCreate(TEST_USER_ID, TEST_SCENARIO_ID, 'es', 'advanced');
+    const conversationRu = conversationCreate({ ...defaultParams, targetLanguage: 'ru', userLevel: 'intermediate' });
+    const conversationEs = conversationCreate({ ...defaultParams, targetLanguage: 'es', userLevel: 'advanced' });
 
     expect(conversationRu.targetLanguage).toBe('ru');
     expect(conversationEs.targetLanguage).toBe('es');
   });
 
   it('should generate unique ids for each conversation', () => {
-    const conversation1 = conversationCreate(TEST_USER_ID, TEST_SCENARIO_ID, 'en', 'beginner');
-    const conversation2 = conversationCreate(TEST_USER_ID, TEST_SCENARIO_ID, 'en', 'beginner');
+    const conversation1 = conversationCreate(defaultParams);
+    const conversation2 = conversationCreate(defaultParams);
 
     expect(conversation1.id).not.toBe(conversation2.id);
   });

@@ -1,7 +1,8 @@
-import * as E from 'fp-ts/Either';
-import * as TE from 'fp-ts/TaskEither';
+import { isLeft, isRight } from 'fp-ts/Either';
+import { left, right } from 'fp-ts/TaskEither';
 import { getConversationUseCase } from '~/application/use-cases/get-conversation';
 import { TEST_CONVERSATION_ID, createTestConversation, createTestMessage } from '~/test/fixtures';
+import { dbError, notFound } from '~/domain/types';
 
 describe('getConversationUseCase', () => {
   const createMockDeps = () => ({
@@ -14,13 +15,13 @@ describe('getConversationUseCase', () => {
     const conversation = createTestConversation();
     const messages = [createTestMessage({ content: 'Hello' }), createTestMessage({ content: 'Hi there' })];
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(TE.right(messages));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.getMessagesByConversation.mockReturnValue(right(messages));
 
     const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
 
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
+    expect(isRight(result)).toBe(true);
+    if (isRight(result)) {
       expect(result.right.id).toBe(TEST_CONVERSATION_ID);
       expect(result.right.messages).toHaveLength(2);
       expect(result.right.messages[0].content).toBe('Hello');
@@ -32,13 +33,13 @@ describe('getConversationUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(TE.right([]));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.getMessagesByConversation.mockReturnValue(right([]));
 
     const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
 
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
+    expect(isRight(result)).toBe(true);
+    if (isRight(result)) {
       expect(result.right.messages).toEqual([]);
     }
   });
@@ -46,14 +47,14 @@ describe('getConversationUseCase', () => {
   it('should return error when conversation not found', async () => {
     const deps = createMockDeps();
 
-    deps.getConversation.mockReturnValue(TE.left(new Error('Conversation not found')));
-    deps.getMessagesByConversation.mockReturnValue(TE.right([]));
+    deps.getConversation.mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID)));
+    deps.getMessagesByConversation.mockReturnValue(right([]));
 
     const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
 
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.message).toBe('Conversation not found');
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('NotFound');
     }
   });
 
@@ -61,14 +62,14 @@ describe('getConversationUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(TE.left(new Error('Failed to get messages')));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.getMessagesByConversation.mockReturnValue(left(dbError(new Error('DB error'))));
 
     const result = await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
 
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.message).toBe('Failed to get messages');
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('DbError');
     }
   });
 
@@ -76,8 +77,8 @@ describe('getConversationUseCase', () => {
     const deps = createMockDeps();
     const conversation = createTestConversation();
 
-    deps.getConversation.mockReturnValue(TE.right(conversation));
-    deps.getMessagesByConversation.mockReturnValue(TE.right([]));
+    deps.getConversation.mockReturnValue(right(conversation));
+    deps.getMessagesByConversation.mockReturnValue(right([]));
 
     await getConversationUseCase(TEST_CONVERSATION_ID, deps)();
 

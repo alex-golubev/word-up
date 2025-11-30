@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types';
 import type { Conversation, Message } from '~/domain/types';
 
@@ -8,6 +9,15 @@ export const TEST_UUID = {
   scenario: 'test-scenario',
 } as const;
 
+export const INVALID_UUIDS = [
+  '',
+  'not-a-uuid',
+  '11111111-1111-1111-1111',
+  '11111111-1111-1111-1111-1111111111111',
+  '11111111_1111_1111_1111_111111111111',
+  'g1111111-1111-1111-1111-111111111111',
+] as const;
+
 export const TEST_USER_ID = makeUserId(TEST_UUID.user);
 export const TEST_CONVERSATION_ID = makeConversationId(TEST_UUID.conversation);
 export const TEST_MESSAGE_ID = makeMessageId(TEST_UUID.message);
@@ -16,7 +26,7 @@ export const TEST_SCENARIO_ID = makeScenarioId(TEST_UUID.scenario);
 export const TEST_DATE = new Date('2024-01-01');
 
 export const createTestMessage = (overrides?: Partial<Message>): Message => ({
-  id: makeMessageId(crypto.randomUUID()),
+  id: makeMessageId(randomUUID()),
   conversationId: TEST_CONVERSATION_ID,
   role: 'user',
   content: 'test content',

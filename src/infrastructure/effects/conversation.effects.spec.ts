@@ -1,36 +1,29 @@
-import * as E from 'fp-ts/Either';
+import { isLeft, isRight } from 'fp-ts/Either';
 import type { DBClient } from '~/infrastructure/db/client';
-import { conversationEffects } from '~/infrastructure/effects/conversation.effects';
+import { createConversationEffects } from '~/infrastructure/effects/conversation.effects';
 import {
   TEST_USER_ID,
   TEST_SCENARIO_ID,
   TEST_CONVERSATION_ID,
+  createTestConversation,
   createTestConversationRow,
   createMockDB,
 } from '~/test/fixtures';
 
-const createTestParams = () => ({
-  id: TEST_CONVERSATION_ID,
-  userId: TEST_USER_ID,
-  scenarioId: TEST_SCENARIO_ID,
-  targetLanguage: 'en' as const,
-  userLevel: 'beginner' as const,
-});
-
-describe('conversationEffects', () => {
-  describe('createConversation', () => {
-    it('should create conversation and return it', async () => {
+describe('createConversationEffects', () => {
+  describe('saveConversation', () => {
+    it('should save conversation and return it', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-      const params = createTestParams();
+      const conversation = createTestConversation();
       const row = createTestConversationRow();
 
       db._mocks.mockReturning.mockResolvedValue([row]);
 
-      const effects = conversationEffects(db);
-      const result = await effects.createConversation(params)();
+      const effects = createConversationEffects(db);
+      const result = await effects.saveConversation(conversation)();
 
-      expect(E.isRight(result)).toBe(true);
-      if (E.isRight(result)) {
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
         expect(result.right.id).toBe(TEST_CONVERSATION_ID);
         expect(result.right.userId).toBe(TEST_USER_ID);
         expect(result.right.scenarioId).toBe(TEST_SCENARIO_ID);
@@ -38,33 +31,36 @@ describe('conversationEffects', () => {
       }
     });
 
-    it('should return error when insert returns no rows', async () => {
+    it('should return InsertFailed error when insert returns no rows', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-      const params = createTestParams();
+      const conversation = createTestConversation();
 
       db._mocks.mockReturning.mockResolvedValue([]);
 
-      const effects = conversationEffects(db);
-      const result = await effects.createConversation(params)();
+      const effects = createConversationEffects(db);
+      const result = await effects.saveConversation(conversation)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to create conversation');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('InsertFailed');
+        if (result.left._tag === 'InsertFailed') {
+          expect(result.left.entity).toBe('Conversation');
+        }
       }
     });
 
-    it('should return error when database throws', async () => {
+    it('should return DbError when database throws', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
-      const params = createTestParams();
+      const conversation = createTestConversation();
 
       db._mocks.mockReturning.mockRejectedValue(new Error('DB error'));
 
-      const effects = conversationEffects(db);
-      const result = await effects.createConversation(params)();
+      const effects = createConversationEffects(db);
+      const result = await effects.saveConversation(conversation)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to create conversation');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('DbError');
       }
     });
   });
@@ -76,42 +72,46 @@ describe('conversationEffects', () => {
 
       db._mocks.mockWhere.mockResolvedValue([row]);
 
-      const effects = conversationEffects(db);
+      const effects = createConversationEffects(db);
       const result = await effects.getConversation(TEST_CONVERSATION_ID)();
 
-      expect(E.isRight(result)).toBe(true);
-      if (E.isRight(result)) {
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
         expect(result.right.id).toBe(TEST_CONVERSATION_ID);
         expect(result.right.targetLanguage).toBe('en');
         expect(result.right.userLevel).toBe('beginner');
       }
     });
 
-    it('should return error when conversation not found', async () => {
+    it('should return NotFound error when conversation not found', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
       db._mocks.mockWhere.mockResolvedValue([]);
 
-      const effects = conversationEffects(db);
+      const effects = createConversationEffects(db);
       const result = await effects.getConversation(TEST_CONVERSATION_ID)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to get conversation');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('NotFound');
+        if (result.left._tag === 'NotFound') {
+          expect(result.left.entity).toBe('Conversation');
+          expect(result.left.id).toBe(TEST_CONVERSATION_ID);
+        }
       }
     });
 
-    it('should return error when database throws', async () => {
+    it('should return DbError when database throws', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
       db._mocks.mockWhere.mockRejectedValue(new Error('DB error'));
 
-      const effects = conversationEffects(db);
+      const effects = createConversationEffects(db);
       const result = await effects.getConversation(TEST_CONVERSATION_ID)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to get conversation');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('DbError');
       }
     });
   });

@@ -1,4 +1,5 @@
-import * as E from 'fp-ts/Either';
+import { randomUUID } from 'node:crypto';
+import { isLeft, isRight } from 'fp-ts/Either';
 import type { DBClient } from '~/infrastructure/db/client';
 import { createMessageEffects } from '~/infrastructure/effects/message.effects';
 import {
@@ -21,14 +22,14 @@ describe('createMessageEffects', () => {
       const effects = createMessageEffects(db);
       const result = await effects.saveMessage(message)();
 
-      expect(E.isRight(result)).toBe(true);
-      if (E.isRight(result)) {
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
         expect(result.right.id).toBe(TEST_MESSAGE_ID);
         expect(result.right.content).toBe('Hello');
       }
     });
 
-    it('should return error when insert returns no rows', async () => {
+    it('should return InsertFailed error when insert returns no rows', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
       const message = createTestMessage();
 
@@ -37,13 +38,16 @@ describe('createMessageEffects', () => {
       const effects = createMessageEffects(db);
       const result = await effects.saveMessage(message)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to save message');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('InsertFailed');
+        if (result.left._tag === 'InsertFailed') {
+          expect(result.left.entity).toBe('Message');
+        }
       }
     });
 
-    it('should return error when database throws', async () => {
+    it('should return DbError when database throws', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
       const message = createTestMessage();
 
@@ -52,9 +56,9 @@ describe('createMessageEffects', () => {
       const effects = createMessageEffects(db);
       const result = await effects.saveMessage(message)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to save message');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('DbError');
       }
     });
   });
@@ -64,7 +68,7 @@ describe('createMessageEffects', () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
       const rows = [
         createTestMessageRow({ content: 'Hello' }),
-        createTestMessageRow({ id: crypto.randomUUID(), content: 'World' }),
+        createTestMessageRow({ id: randomUUID(), content: 'World' }),
       ];
 
       db._mocks.mockOrderBy.mockResolvedValue(rows);
@@ -72,8 +76,8 @@ describe('createMessageEffects', () => {
       const effects = createMessageEffects(db);
       const result = await effects.getMessagesByConversation(TEST_CONVERSATION_ID)();
 
-      expect(E.isRight(result)).toBe(true);
-      if (E.isRight(result)) {
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
         expect(result.right).toHaveLength(2);
         expect(result.right[0].content).toBe('Hello');
         expect(result.right[1].content).toBe('World');
@@ -88,13 +92,13 @@ describe('createMessageEffects', () => {
       const effects = createMessageEffects(db);
       const result = await effects.getMessagesByConversation(TEST_CONVERSATION_ID)();
 
-      expect(E.isRight(result)).toBe(true);
-      if (E.isRight(result)) {
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
         expect(result.right).toHaveLength(0);
       }
     });
 
-    it('should return error when database throws', async () => {
+    it('should return DbError when database throws', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
       db._mocks.mockOrderBy.mockRejectedValue(new Error('DB error'));
@@ -102,9 +106,9 @@ describe('createMessageEffects', () => {
       const effects = createMessageEffects(db);
       const result = await effects.getMessagesByConversation(TEST_CONVERSATION_ID)();
 
-      expect(E.isLeft(result)).toBe(true);
-      if (E.isLeft(result)) {
-        expect(result.left.message).toBe('Failed to get messages');
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left._tag).toBe('DbError');
       }
     });
   });

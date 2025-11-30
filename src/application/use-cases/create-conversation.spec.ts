@@ -1,11 +1,14 @@
-import * as E from 'fp-ts/Either';
-import * as TE from 'fp-ts/TaskEither';
+import { isLeft, isRight } from 'fp-ts/Either';
+import type { TaskEither } from 'fp-ts/TaskEither';
+import { left, right } from 'fp-ts/TaskEither';
 import { createConversationUseCase } from '~/application/use-cases/create-conversation';
 import { TEST_SCENARIO_ID, TEST_USER_ID, createTestConversation } from '~/test/fixtures';
+import type { AppError, Conversation } from '~/domain/types';
+import { insertFailed } from '~/domain/types';
 
 describe('createConversationUseCase', () => {
   const createMockDeps = () => ({
-    createConversation: jest.fn(),
+    saveConversation: jest.fn<TaskEither<AppError, Conversation>, [Conversation]>(),
   });
 
   const defaultParams = {
@@ -15,62 +18,54 @@ describe('createConversationUseCase', () => {
     userLevel: 'beginner' as const,
   };
 
-  it('should create conversation successfully', async () => {
+  it('should create conversation with domain function and save it', async () => {
     const deps = createMockDeps();
-    const conversation = createTestConversation();
+    const savedConversation = createTestConversation();
 
-    deps.createConversation.mockReturnValue(TE.right(conversation));
+    deps.saveConversation.mockReturnValue(right(savedConversation));
 
     const result = await createConversationUseCase(defaultParams, deps)();
 
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
-      expect(result.right.userId).toBe(TEST_USER_ID);
-      expect(result.right.scenarioId).toBe(TEST_SCENARIO_ID);
-      expect(result.right.targetLanguage).toBe('en');
-      expect(result.right.userLevel).toBe('beginner');
-    }
+    expect(isRight(result)).toBe(true);
+    expect(deps.saveConversation).toHaveBeenCalledTimes(1);
+
+    const calledWith = deps.saveConversation.mock.calls[0][0];
+    expect(calledWith.userId).toBe(TEST_USER_ID);
+    expect(calledWith.scenarioId).toBe(TEST_SCENARIO_ID);
+    expect(calledWith.targetLanguage).toBe('en');
+    expect(calledWith.userLevel).toBe('beginner');
+    expect(calledWith.id).toBeDefined();
   });
 
-  it('should pass all params to createConversation dependency', async () => {
+  it('should generate unique conversation id via domain function', async () => {
     const deps = createMockDeps();
-    const conversation = createTestConversation();
+    deps.saveConversation.mockReturnValue(right(createTestConversation()));
 
-    deps.createConversation.mockReturnValue(TE.right(conversation));
+    await createConversationUseCase(defaultParams, deps)();
+    const firstCallId = deps.saveConversation.mock.calls[0][0].id;
 
-    const params = {
-      userId: TEST_USER_ID,
-      scenarioId: TEST_SCENARIO_ID,
-      targetLanguage: 'ru' as const,
-      userLevel: 'advanced' as const,
-    };
+    await createConversationUseCase(defaultParams, deps)();
+    const secondCallId = deps.saveConversation.mock.calls[1][0].id;
 
-    await createConversationUseCase(params, deps)();
-
-    expect(deps.createConversation).toHaveBeenCalledWith(params);
+    expect(firstCallId).not.toBe(secondCallId);
   });
 
-  it('should return error when createConversation fails', async () => {
+  it('should return error when saveConversation fails', async () => {
     const deps = createMockDeps();
 
-    deps.createConversation.mockReturnValue(TE.left(new Error('Failed to create conversation')));
+    deps.saveConversation.mockReturnValue(left(insertFailed('Conversation')));
 
     const result = await createConversationUseCase(defaultParams, deps)();
 
-    expect(E.isLeft(result)).toBe(true);
-    if (E.isLeft(result)) {
-      expect(result.left.message).toBe('Failed to create conversation');
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('InsertFailed');
     }
   });
 
   it('should create conversation with different language and level', async () => {
     const deps = createMockDeps();
-    const conversation = createTestConversation({
-      targetLanguage: 'es',
-      userLevel: 'intermediate',
-    });
-
-    deps.createConversation.mockReturnValue(TE.right(conversation));
+    deps.saveConversation.mockReturnValue(right(createTestConversation()));
 
     const params = {
       userId: TEST_USER_ID,
@@ -79,12 +74,10 @@ describe('createConversationUseCase', () => {
       userLevel: 'intermediate' as const,
     };
 
-    const result = await createConversationUseCase(params, deps)();
+    await createConversationUseCase(params, deps)();
 
-    expect(E.isRight(result)).toBe(true);
-    if (E.isRight(result)) {
-      expect(result.right.targetLanguage).toBe('es');
-      expect(result.right.userLevel).toBe('intermediate');
-    }
+    const calledWith = deps.saveConversation.mock.calls[0][0];
+    expect(calledWith.targetLanguage).toBe('es');
+    expect(calledWith.userLevel).toBe('intermediate');
   });
 });

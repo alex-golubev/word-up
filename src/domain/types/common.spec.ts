@@ -1,16 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types/common';
+import { INVALID_UUIDS } from '~/test/fixtures';
 
-const VALID_UUID = crypto.randomUUID();
-const VALID_UUID_UPPERCASE = crypto.randomUUID().toUpperCase();
-
-const INVALID_UUIDS = [
-  '',
-  'not-a-uuid',
-  '11111111-1111-1111-1111',
-  '11111111-1111-1111-1111-1111111111111',
-  '11111111_1111_1111_1111_111111111111',
-  'g1111111-1111-1111-1111-111111111111',
-];
+const VALID_UUID = randomUUID();
+const VALID_UUID_UPPERCASE = randomUUID().toUpperCase();
 
 describe('makeUserId', () => {
   it('should create UserId from valid UUID', () => {
