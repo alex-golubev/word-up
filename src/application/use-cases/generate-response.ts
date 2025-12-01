@@ -33,8 +33,8 @@ export const generateResponseUseCase =
   (params: GenerateResponseParams): AppReader<Message> =>
   (env) =>
     pipe(
-      env.getConversation(params.conversationId),
-      map((conversation) => buildChatMessages(params.scenario, conversation.messages)),
+      env.getMessagesByConversation(params.conversationId),
+      map((messages) => buildChatMessages(params.scenario, messages)),
       chain((chatMessages) => env.generateChatCompletion(chatMessages)),
       map(({ content }) => messageCreate({ conversationId: params.conversationId, role: 'assistant', content })),
       chain((message) => env.saveMessage(message))

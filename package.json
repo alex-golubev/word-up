@@ -10,6 +10,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx --env-file=.env src/infrastructure/db/seed.ts",
+    "db:seed:prod": "tsx src/infrastructure/db/seed.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -53,6 +55,7 @@
     "supertest": "^7.1.4",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
