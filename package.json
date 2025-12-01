@@ -25,6 +25,8 @@
     "@trpc/next": "^11.7.1",
     "@trpc/react-query": "^11.7.1",
     "@trpc/server": "^11.7.1",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "drizzle-orm": "^0.44.7",
     "fp-ts": "^2.16.11",
     "next": "16.0.3",

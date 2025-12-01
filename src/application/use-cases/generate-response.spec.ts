@@ -73,12 +73,11 @@ describe('generateResponseUseCase', () => {
       createTestMessage({ role: 'assistant', content: 'Hi there!' }),
       createTestMessage({ role: 'user', content: 'Can I have a coffee?' }),
     ];
-    const conversation = createTestConversation({ messages });
     const scenario = createTestScenario();
 
     let capturedMessages: unknown[] = [];
     const env = createMockEnv({
-      getConversation: jest.fn().mockReturnValue(right(conversation)),
+      getMessagesByConversation: jest.fn().mockReturnValue(right(messages)),
       generateChatCompletion: jest.fn().mockImplementation((msgs) => {
         capturedMessages = msgs;
         return right({ content: 'response' });
@@ -98,7 +97,7 @@ describe('generateResponseUseCase', () => {
     const scenario = createTestScenario();
 
     const env = createMockEnv({
-      getConversation: jest.fn().mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID))),
+      getMessagesByConversation: jest.fn().mockReturnValue(left(notFound('Conversation', TEST_CONVERSATION_ID))),
     });
 
     const result = await generateResponseUseCase({ conversationId: TEST_CONVERSATION_ID, scenario })(env)();

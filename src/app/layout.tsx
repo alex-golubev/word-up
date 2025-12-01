@@ -1,8 +1,10 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Inter } from 'next/font/google';
-import './globals.css';
 import { TrpcProvider } from '~/presentation/components/TrpcProvider';
+import type { ReactNode } from 'react';
+import type { Metadata } from 'next';
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,7 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <TrpcProvider>{children}</TrpcProvider>
+        <TrpcProvider>
+          {children}
+          <Analytics />
+          <SpeedInsights />
+        </TrpcProvider>
       </body>
     </html>
   );
