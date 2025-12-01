@@ -1,4 +1,4 @@
-import { notFound, insertFailed, validationError, dbError, getErrorMessage } from '~/domain/errors';
+import { notFound, insertFailed, validationError, dbError, aiError, getErrorMessage } from '~/domain/errors';
 
 describe('error constructors', () => {
   describe('notFound', () => {
@@ -58,6 +58,19 @@ describe('error constructors', () => {
       });
     });
   });
+
+  describe('aiError', () => {
+    it('should create AiError with message and cause', () => {
+      const cause = new Error('API rate limit exceeded');
+      const error = aiError('Failed to generate response', cause);
+
+      expect(error).toEqual({
+        _tag: 'AiError',
+        message: 'Failed to generate response',
+        cause,
+      });
+    });
+  });
 });
 
 describe('getErrorMessage', () => {
@@ -70,6 +83,8 @@ describe('getErrorMessage', () => {
     [validationError('Email is required'), 'Email is required'],
     [dbError(new Error('connection failed')), 'Database operation failed'],
     [dbError('string error'), 'Database operation failed'],
+    [aiError('API timeout', new Error('timeout')), 'AI error: API timeout'],
+    [aiError('Rate limit exceeded', null), 'AI error: Rate limit exceeded'],
   ])('should return correct message for %o', (error, expected) => {
     expect(getErrorMessage(error)).toBe(expected);
   });

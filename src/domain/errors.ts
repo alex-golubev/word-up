@@ -2,7 +2,8 @@ export type AppError =
   | { readonly _tag: 'NotFound'; readonly entity: string; readonly id: string }
   | { readonly _tag: 'InsertFailed'; readonly entity: string; readonly cause?: unknown }
   | { readonly _tag: 'ValidationError'; readonly message: string }
-  | { readonly _tag: 'DbError'; readonly cause: unknown };
+  | { readonly _tag: 'DbError'; readonly cause: unknown }
+  | { readonly _tag: 'AiError'; readonly message: string; readonly cause?: unknown };
 
 export const notFound = (entity: string, id: string): AppError => ({
   _tag: 'NotFound',
@@ -26,6 +27,12 @@ export const dbError = (cause: unknown): AppError => ({
   cause,
 });
 
+export const aiError = (message: string, cause: unknown): AppError => ({
+  _tag: 'AiError',
+  message,
+  cause,
+});
+
 export const getErrorMessage = (error: AppError): string => {
   switch (error._tag) {
     case 'NotFound':
@@ -36,5 +43,7 @@ export const getErrorMessage = (error: AppError): string => {
       return error.message;
     case 'DbError':
       return 'Database operation failed';
+    case 'AiError':
+      return `AI error: ${error.message}`;
   }
 };

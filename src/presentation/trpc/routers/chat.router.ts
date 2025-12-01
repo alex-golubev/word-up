@@ -6,12 +6,17 @@ import {
   MessageContentSchema,
   MessageRoleSchema,
   ScenarioIdSchema,
+  ScenarioSchema,
   UserIdSchema,
   UserLevelSchema,
 } from '~/domain/types';
-import { createConversationUseCase, getConversationUseCase, sendMessageUseCase } from '~/application/use-cases';
+import {
+  createConversationUseCase,
+  generateResponseUseCase,
+  getConversationUseCase,
+  sendMessageUseCase,
+} from '~/application/use-cases';
 import { safeHandler } from '~/presentation/trpc/errors';
-import { createAppEnv } from '~/infrastructure/env';
 
 const CreateConversationInputSchema = z.object({
   userId: UserIdSchema,
@@ -28,16 +33,25 @@ const SendMessageInputSchema = z.object({
   content: MessageContentSchema,
 });
 
+const GenerateResponseInputSchema = z.object({
+  conversationId: ConversationIdSchema,
+  scenario: ScenarioSchema,
+});
+
 export const chatRouter = router({
   createConversation: publicProcedure
     .input(CreateConversationInputSchema)
-    .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(createAppEnv(ctx.db)))),
+    .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(ctx.env))),
 
   getConversation: publicProcedure
     .input(GetConversationInputSchema)
-    .query(safeHandler(({ ctx, input }) => getConversationUseCase(input.conversationId)(createAppEnv(ctx.db)))),
+    .query(safeHandler(({ ctx, input }) => getConversationUseCase(input.conversationId)(ctx.env))),
 
   sendMessage: publicProcedure
     .input(SendMessageInputSchema)
-    .mutation(safeHandler(({ ctx, input }) => sendMessageUseCase(input)(createAppEnv(ctx.db)))),
+    .mutation(safeHandler(({ ctx, input }) => sendMessageUseCase(input)(ctx.env))),
+
+  generateResponse: publicProcedure
+    .input(GenerateResponseInputSchema)
+    .mutation(safeHandler(({ ctx, input }) => generateResponseUseCase(input)(ctx.env))),
 });
