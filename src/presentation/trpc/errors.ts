@@ -17,6 +17,9 @@ export const appErrorToTRPC = (error: AppError): TRPCError => {
     case 'DbError':
       console.error('[DbError]', error.cause);
       return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
+    case 'AiError':
+      console.error('[AiError]', error.message, error.cause);
+      return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
   }
 };
 

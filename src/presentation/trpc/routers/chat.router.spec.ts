@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { right } from 'fp-ts/TaskEither';
 
 jest.mock('~/utils/transformer', () => ({
   transformer: {
@@ -7,11 +8,19 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
+jest.mock('~/infrastructure/effects/openai.effects', () => ({
+  createOpenAIEffects: () => ({
+    generateChatCompletion: jest.fn().mockReturnValue(right({ content: 'mocked response' })),
+  }),
+}));
+
 import { chatRouter } from '~/presentation/trpc/routers/chat.router';
 import { TEST_UUID, createMockDB, createTestConversationRow, createTestMessageRow } from '~/test/fixtures';
+import { createAppEnv } from '~/infrastructure/env';
 
 const createCaller = (db: ReturnType<typeof createMockDB>) => {
-  return chatRouter.createCaller({ db } as never);
+  const env = createAppEnv({ db: db as never, openai: { apiKey: 'test-key' } });
+  return chatRouter.createCaller({ env });
 };
 
 describe('chatRouter', () => {

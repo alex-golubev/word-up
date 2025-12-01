@@ -6,5 +6,6 @@ export const createMockEnv = (overrides: Partial<AppEnv> = {}): AppEnv => ({
   getMessagesByConversation: jest.fn().mockReturnValue(right([])),
   saveConversation: jest.fn().mockReturnValue(right(null)),
   saveMessage: jest.fn().mockReturnValue(right(null)),
+  generateChatCompletion: jest.fn().mockReturnValue(right({ content: '' })),
   ...overrides,
 });

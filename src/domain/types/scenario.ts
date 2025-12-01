@@ -1,12 +1,15 @@
-import type { Language, ScenarioId, UserLevel } from '~/domain/types';
+import { z } from 'zod';
+import { LanguageSchema, ScenarioIdSchema, UserLevelSchema } from '~/domain/types/common';
 
-export type Scenario = {
-  readonly id: ScenarioId;
-  readonly title: string;
-  readonly description: string;
-  readonly role: string;
-  readonly userLevel: UserLevel;
-  readonly targetLanguage: Language;
-  readonly startingMessage: string;
-  readonly vocabulary: readonly string[];
-};
+export const ScenarioSchema = z.object({
+  id: ScenarioIdSchema,
+  title: z.string(),
+  description: z.string(),
+  role: z.string(),
+  userLevel: UserLevelSchema,
+  targetLanguage: LanguageSchema,
+  startingMessage: z.string(),
+  vocabulary: z.array(z.string()),
+});
+
+export type Scenario = z.infer<typeof ScenarioSchema>;

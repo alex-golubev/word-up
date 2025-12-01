@@ -1,8 +1,9 @@
 import { TRPCError } from '@trpc/server';
 import { left, right } from 'fp-ts/TaskEither';
-import { notFound, insertFailed, validationError, dbError } from '~/domain/types';
+import { notFound, insertFailed, validationError, dbError, aiError } from '~/domain/types';
 import { appErrorToTRPC, runEffect, safeHandler } from '~/presentation/trpc/errors';
 import type { Context } from '~/presentation/trpc/context';
+import { createMockEnv } from '~/test/mock-env';
 
 describe('appErrorToTRPC', () => {
   it('should convert NotFound to NOT_FOUND TRPCError', () => {
@@ -52,6 +53,21 @@ describe('appErrorToTRPC', () => {
 
     consoleErrorSpy.mockRestore();
   });
+
+  it('should convert AiError to INTERNAL_SERVER_ERROR TRPCError and log error', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const cause = new Error('API rate limit');
+    const error = aiError('Failed to generate response', cause);
+
+    const trpcError = appErrorToTRPC(error);
+
+    expect(trpcError).toBeInstanceOf(TRPCError);
+    expect(trpcError.code).toBe('INTERNAL_SERVER_ERROR');
+    expect(trpcError.message).toBe('AI error: Failed to generate response');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[AiError]', 'Failed to generate response', cause);
+
+    consoleErrorSpy.mockRestore();
+  });
 });
 
 describe('runEffect', () => {
@@ -84,7 +100,7 @@ describe('runEffect', () => {
 });
 
 describe('safeHandler', () => {
-  const mockContext = { db: {} } as Context;
+  const mockContext: Context = { env: createMockEnv() };
 
   it('should return result when TaskEither succeeds', async () => {
     const handler = safeHandler(({ input }: { ctx: Context; input: { value: number } }) =>

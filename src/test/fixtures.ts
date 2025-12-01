@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types';
-import type { Conversation, Message } from '~/domain/types';
+import type { Conversation, Message, Scenario } from '~/domain/types';
 
 export const TEST_UUID = {
   user: '11111111-1111-1111-1111-111111111111',
@@ -43,6 +43,18 @@ export const createTestConversation = (overrides?: Partial<Conversation>): Conve
   messages: [],
   createdAt: TEST_DATE,
   updatedAt: TEST_DATE,
+  ...overrides,
+});
+
+export const createTestScenario = (overrides?: Partial<Scenario>): Scenario => ({
+  id: TEST_SCENARIO_ID,
+  title: 'Coffee Shop',
+  description: 'Order a coffee at a local cafe',
+  role: 'barista',
+  userLevel: 'beginner',
+  targetLanguage: 'en',
+  startingMessage: 'Hi, welcome! What can I get for you today?',
+  vocabulary: ['coffee', 'latte', 'espresso'],
   ...overrides,
 });
 
