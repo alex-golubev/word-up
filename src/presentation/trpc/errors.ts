@@ -9,14 +9,28 @@ export const appErrorToTRPC = (error: AppError): TRPCError => {
   switch (error._tag) {
     case 'NotFound':
       return new TRPCError({ code: 'NOT_FOUND', message: getErrorMessage(error) });
+
     case 'ValidationError':
       return new TRPCError({ code: 'BAD_REQUEST', message: getErrorMessage(error) });
+
+    // Auth errors:
+    case 'InvalidCredentials':
+    case 'TokenExpired':
+    case 'InvalidToken':
+    case 'Unauthorized':
+      return new TRPCError({ code: 'UNAUTHORIZED', message: getErrorMessage(error) });
+
+    case 'EmailAlreadyExists':
+      return new TRPCError({ code: 'CONFLICT', message: getErrorMessage(error) });
+
     case 'InsertFailed':
       console.error('[InsertFailed]', error.entity, error.cause);
       return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
+
     case 'DbError':
       console.error('[DbError]', error.cause);
       return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
+
     case 'AiError':
       console.error('[AiError]', error.message, error.cause);
       return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: getErrorMessage(error) });
@@ -30,6 +44,6 @@ export const runEffect = async <A>(te: TaskEither<AppError, A>): Promise<A> => {
 };
 
 export const safeHandler =
-  <I, O>(fn: (params: { ctx: Context; input: I }) => TaskEither<AppError, O>) =>
-  (params: { ctx: Context; input: I }): Promise<O> =>
+  <C extends Context, I, O>(fn: (params: { ctx: C; input: I }) => TaskEither<AppError, O>) =>
+  (params: { ctx: C; input: I }): Promise<O> =>
     runEffect(fn(params));

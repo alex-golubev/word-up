@@ -68,6 +68,27 @@ export const createTestMessageRow = (overrides?: Record<string, unknown>) => ({
   ...overrides,
 });
 
+export const createTestUserRow = (overrides?: Record<string, unknown>) => ({
+  id: TEST_UUID.user,
+  email: 'test@example.com',
+  passwordHash: 'hashed-password',
+  name: 'Test User',
+  nativeLanguage: 'en' as const,
+  createdAt: TEST_DATE,
+  ...overrides,
+});
+
+export const createTestRefreshTokenRow = (overrides?: Record<string, unknown>) => ({
+  id: 'token-id',
+  userId: TEST_UUID.user,
+  token: 'test-refresh-token',
+  expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+  createdAt: TEST_DATE,
+  usedAt: null,
+  replacementToken: null,
+  ...overrides,
+});
+
 export const createTestConversationRow = (overrides?: Record<string, unknown>) => ({
   id: TEST_UUID.conversation,
   userId: TEST_UUID.user,
@@ -89,13 +110,22 @@ export const createMockDB = () => {
   const mockInsert = jest.fn(() => ({ values: mockValues }));
 
   const mockOrderBy: MockFn = jest.fn();
-  const mockWhere: MockFn = jest.fn(() => ({ orderBy: mockOrderBy }));
+  const mockWhere: MockFn = jest.fn(() => ({ orderBy: mockOrderBy, returning: mockReturning }));
   const mockFrom = jest.fn(() => ({ where: mockWhere }));
   const mockSelect = jest.fn(() => ({ from: mockFrom }));
+
+  // For update operations
+  const mockSet = jest.fn(() => ({ where: mockWhere }));
+  const mockUpdate = jest.fn(() => ({ set: mockSet }));
+
+  // For delete operations
+  const mockDelete = jest.fn(() => ({ where: mockWhere }));
 
   return {
     insert: mockInsert,
     select: mockSelect,
+    update: mockUpdate,
+    delete: mockDelete,
     _mocks: {
       mockReturning,
       mockValues,
@@ -104,6 +134,9 @@ export const createMockDB = () => {
       mockWhere,
       mockFrom,
       mockSelect,
+      mockSet,
+      mockUpdate,
+      mockDelete,
     },
   };
 };

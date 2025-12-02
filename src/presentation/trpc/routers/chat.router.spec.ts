@@ -20,7 +20,7 @@ import { createAppEnv } from '~/infrastructure/env';
 
 const createCaller = (db: ReturnType<typeof createMockDB>) => {
   const env = createAppEnv({ db: db as never, openai: { apiKey: 'test-key' } });
-  return chatRouter.createCaller({ env });
+  return chatRouter.createCaller({ env, accessToken: null, refreshToken: null });
 };
 
 describe('chatRouter', () => {

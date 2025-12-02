@@ -1,0 +1,19 @@
+import type { Language, UserId } from './common';
+
+export type User = {
+  readonly id: UserId;
+  readonly email: string;
+  readonly passwordHash: string | null;
+  readonly name: string | null;
+  readonly nativeLanguage: Language;
+  readonly createdAt: Date;
+};
+
+export type PublicUser = Omit<User, 'passwordHash'>;
+
+export type UserCreateParams = {
+  readonly email: string;
+  readonly passwordHash: string;
+  readonly name?: string | null;
+  readonly nativeLanguage: Language;
+};

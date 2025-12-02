@@ -26,6 +26,8 @@ npm run db:generate  # Generate migrations from schema changes
 npm run db:migrate   # Run pending migrations
 npm run db:push      # Push schema directly to database (dev only)
 npm run db:studio    # Open Drizzle Studio GUI
+npm run db:seed      # Seed database with test data (dev, uses .env)
+npm run db:seed:prod # Seed database (prod, requires env vars set)
 ```
 
 ## Architecture
@@ -54,7 +56,17 @@ External concerns (database, APIs).
 - **`db/schemas/`** - Drizzle ORM table definitions
 - **`db/client.ts`** - Database connection (Neon serverless)
 - **`effects/`** - Side-effectful operations wrapped in `TaskEither`
-- **`env.ts`** - Factory function `createAppEnv(db)` that wires all effects together
+- **`env.ts`** - Factory function `createAppEnv(config)` that wires all effects together
+
+### Presentation Layer (`src/presentation/`)
+
+User-facing concerns (tRPC API, React hooks, components).
+
+- **`trpc/routers/`** - tRPC router definitions
+- **`trpc/context.ts`** - Creates `AppEnv` and caches it for tRPC context
+- **`trpc/errors.ts`** - `safeHandler` wrapper for TaskEither-to-tRPC error conversion
+- **`hooks/`** - React hooks including tRPC client hook
+- **`components/`** - React components (e.g., `TrpcProvider`)
 
 ## Key Patterns
 
@@ -106,31 +118,49 @@ export const sendMessageUseCase =
     );
 ```
 
-The `AppEnv` type defines all available dependencies (`src/application/env.ts`):
+The `AppEnv` type defines all available dependencies (`src/application/env.ts`), including conversation, user, and auth token operations.
+
+### Parallel Operations with fp-ts
+
+Use `sequenceS(ApplyPar)` for parallel `TaskEither` execution:
 
 ```typescript
-export type AppEnv = {
-  readonly getConversation: (id: ConversationId) => TaskEither<AppError, Conversation>;
-  readonly getMessagesByConversation: (id: ConversationId) => TaskEither<AppError, readonly Message[]>;
-  readonly saveConversation: (conversation: Conversation) => TaskEither<AppError, Conversation>;
-  readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
-};
+import { sequenceS } from 'fp-ts/Apply';
+import { ApplyPar, tryCatch } from 'fp-ts/TaskEither';
+
+// Run in parallel
+sequenceS(ApplyPar)({
+  accessToken: tryCatch(() => createAccessToken(payload), dbError),
+  refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
+})
 ```
 
 ### tRPC Error Handling
 
-Use `safeHandler` wrapper for mutations/queries (`src/presentation/trpc/errors.ts`). The `createAppEnv` factory wires all dependencies:
+Use `safeHandler` wrapper for mutations/queries (`src/presentation/trpc/errors.ts`). The `AppEnv` is created once in `context.ts` and accessed via `ctx.env`:
 
 ```typescript
 import { safeHandler } from '~/presentation/trpc/errors';
-import { createAppEnv } from '~/infrastructure/env';
 
 export const chatRouter = router({
+  // Public route
   createConversation: publicProcedure
     .input(CreateConversationInputSchema)
-    .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(createAppEnv(ctx.db)))),
+    .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(ctx.env))),
+
+  // Protected route (requires auth)
+  me: protectedProcedure
+    .query(safeHandler(({ ctx }) => getCurrentUserUseCase(ctx.userId)(ctx.env))),
 });
 ```
+
+### Authentication
+
+Auth uses HTTP-only cookies with JWT tokens (`src/infrastructure/auth/`):
+
+- `createAccessToken` / `createRefreshToken` - JWT creation
+- `setAuthCookies` / `clearAuthCookies` - Cookie management
+- `protectedProcedure` - tRPC middleware that validates tokens and auto-refreshes
 
 ### Test Fixtures
 

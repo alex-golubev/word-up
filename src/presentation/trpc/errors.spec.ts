@@ -1,6 +1,17 @@
 import { TRPCError } from '@trpc/server';
 import { left, right } from 'fp-ts/TaskEither';
-import { notFound, insertFailed, validationError, dbError, aiError } from '~/domain/types';
+import {
+  notFound,
+  insertFailed,
+  validationError,
+  dbError,
+  aiError,
+  invalidCredentials,
+  emailAlreadyExists,
+  tokenExpired,
+  invalidToken,
+  unauthorized,
+} from '~/domain/types';
 import { appErrorToTRPC, runEffect, safeHandler } from '~/presentation/trpc/errors';
 import type { Context } from '~/presentation/trpc/context';
 import { createMockEnv } from '~/test/mock-env';
@@ -68,6 +79,51 @@ describe('appErrorToTRPC', () => {
 
     consoleErrorSpy.mockRestore();
   });
+
+  it('should convert InvalidCredentials to UNAUTHORIZED TRPCError', () => {
+    const error = invalidCredentials();
+    const trpcError = appErrorToTRPC(error);
+
+    expect(trpcError).toBeInstanceOf(TRPCError);
+    expect(trpcError.code).toBe('UNAUTHORIZED');
+    expect(trpcError.message).toBe('Invalid email or password');
+  });
+
+  it('should convert TokenExpired to UNAUTHORIZED TRPCError', () => {
+    const error = tokenExpired();
+    const trpcError = appErrorToTRPC(error);
+
+    expect(trpcError).toBeInstanceOf(TRPCError);
+    expect(trpcError.code).toBe('UNAUTHORIZED');
+    expect(trpcError.message).toBe('Token has expired');
+  });
+
+  it('should convert InvalidToken to UNAUTHORIZED TRPCError', () => {
+    const error = invalidToken();
+    const trpcError = appErrorToTRPC(error);
+
+    expect(trpcError).toBeInstanceOf(TRPCError);
+    expect(trpcError.code).toBe('UNAUTHORIZED');
+    expect(trpcError.message).toBe('Invalid token');
+  });
+
+  it('should convert Unauthorized to UNAUTHORIZED TRPCError', () => {
+    const error = unauthorized();
+    const trpcError = appErrorToTRPC(error);
+
+    expect(trpcError).toBeInstanceOf(TRPCError);
+    expect(trpcError.code).toBe('UNAUTHORIZED');
+    expect(trpcError.message).toBe('Authentication required');
+  });
+
+  it('should convert EmailAlreadyExists to CONFLICT TRPCError', () => {
+    const error = emailAlreadyExists('test@example.com');
+    const trpcError = appErrorToTRPC(error);
+
+    expect(trpcError).toBeInstanceOf(TRPCError);
+    expect(trpcError.code).toBe('CONFLICT');
+    expect(trpcError.message).toBe('Email test@example.com is already registered');
+  });
 });
 
 describe('runEffect', () => {
@@ -100,7 +156,7 @@ describe('runEffect', () => {
 });
 
 describe('safeHandler', () => {
-  const mockContext: Context = { env: createMockEnv() };
+  const mockContext: Context = { env: createMockEnv(), accessToken: null, refreshToken: null };
 
   it('should return result when TaskEither succeeds', async () => {
     const handler = safeHandler(({ input }: { ctx: Context; input: { value: number } }) =>

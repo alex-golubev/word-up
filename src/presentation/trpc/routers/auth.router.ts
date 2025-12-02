@@ -1,0 +1,60 @@
+import { z } from 'zod';
+import { pipe } from 'fp-ts/function';
+import { map } from 'fp-ts/TaskEither';
+import { protectedProcedure, publicProcedure, router } from '~/presentation/trpc/trpc';
+import { EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
+import { getCurrentUserUseCase, loginUseCase, logoutUseCase, registerUseCase } from '~/application/use-cases';
+import { safeHandler } from '~/presentation/trpc/errors';
+import { setAuthCookies, clearAuthCookies } from '~/infrastructure/auth';
+
+const RegisterInputSchema = z.object({
+  email: EmailSchema,
+  password: PasswordSchema,
+  name: NameSchema,
+  nativeLanguage: LanguageSchema,
+});
+
+const LoginInputSchema = z.object({
+  email: EmailSchema,
+  password: PasswordSchema,
+});
+
+export const authRouter = router({
+  register: publicProcedure.input(RegisterInputSchema).mutation(
+    safeHandler(({ ctx, input }) =>
+      pipe(
+        registerUseCase(input)(ctx.env),
+        map(async (tokens) => {
+          await setAuthCookies(tokens.accessToken, tokens.refreshToken);
+          return { success: true };
+        })
+      )
+    )
+  ),
+
+  login: publicProcedure.input(LoginInputSchema).mutation(
+    safeHandler(({ ctx, input }) =>
+      pipe(
+        loginUseCase(input)(ctx.env),
+        map(async (tokens) => {
+          await setAuthCookies(tokens.accessToken, tokens.refreshToken);
+          return { success: true };
+        })
+      )
+    )
+  ),
+
+  logout: protectedProcedure.mutation(
+    safeHandler(({ ctx }) =>
+      pipe(
+        logoutUseCase(ctx.refreshToken!)(ctx.env),
+        map(async () => {
+          await clearAuthCookies();
+          return { success: true };
+        })
+      )
+    )
+  ),
+
+  me: protectedProcedure.query(safeHandler(({ ctx }) => getCurrentUserUseCase(ctx.userId)(ctx.env))),
+});
