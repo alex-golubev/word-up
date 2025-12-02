@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function';
-import { chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
+import { sequenceS } from 'fp-ts/Apply';
+import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
 import type { AppReader } from '~/application/reader';
 import type { AuthTokens } from '~/domain/types';
 import { dbError, invalidToken, tokenExpired } from '~/domain/types';
@@ -28,15 +29,12 @@ export const refreshTokensUseCase =
         )
       ),
       chain(({ tokenRecord, payload }) =>
-        tryCatch(
-          async () => {
-            const [accessToken, refreshToken] = await Promise.all([
-              createAccessToken(payload),
-              createRefreshToken(payload),
-            ]);
-            return { tokenRecord, payload, accessToken, refreshToken };
-          },
-          (error) => dbError(error)
+        pipe(
+          sequenceS(ApplyPar)({
+            accessToken: tryCatch(() => createAccessToken(payload), dbError),
+            refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
+          }),
+          map((tokens) => ({ tokenRecord, payload, ...tokens }))
         )
       ),
       chain(({ tokenRecord, payload, accessToken, refreshToken }) =>

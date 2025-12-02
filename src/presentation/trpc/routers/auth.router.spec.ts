@@ -15,8 +15,8 @@ jest.mock('~/infrastructure/auth', () => ({
   verifyAccessToken: (...args: unknown[]) => mockVerifyAccessToken(...args),
   hashPassword: jest.fn().mockResolvedValue('hashed'),
   verifyPassword: jest.fn().mockResolvedValue(true),
-  createAccessToken: jest.fn().mockReturnValue('access-token'),
-  createRefreshToken: jest.fn().mockReturnValue('refresh-token'),
+  createAccessToken: jest.fn().mockResolvedValue('access-token'),
+  createRefreshToken: jest.fn().mockResolvedValue('refresh-token'),
   getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date()),
 }));
 

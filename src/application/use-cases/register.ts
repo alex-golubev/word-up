@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function';
-import { chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
+import { sequenceS } from 'fp-ts/Apply';
+import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
 import type { AppReader } from '~/application/reader';
 import type { AuthTokens, Language } from '~/domain/types';
 import { dbError, emailAlreadyExists } from '~/domain/types';
@@ -39,19 +40,16 @@ export const registerUseCase =
       ),
 
       // 4. Create JWT tokens
-      chain((user) =>
-        tryCatch(
-          async () => {
-            const payload = { userId: user.id, email: user.email };
-            const [accessToken, refreshToken] = await Promise.all([
-              createAccessToken(payload),
-              createRefreshToken(payload),
-            ]);
-            return { user, accessToken, refreshToken };
-          },
-          (error) => dbError(error)
-        )
-      ),
+      chain((user) => {
+        const payload = { userId: user.id, email: user.email };
+        return pipe(
+          sequenceS(ApplyPar)({
+            accessToken: tryCatch(() => createAccessToken(payload), dbError),
+            refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
+          }),
+          map((tokens) => ({ user, ...tokens }))
+        );
+      }),
 
       // 5. Save refresh token to DB
       chain(({ user, accessToken, refreshToken }) =>

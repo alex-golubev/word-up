@@ -118,16 +118,21 @@ export const sendMessageUseCase =
     );
 ```
 
-The `AppEnv` type defines all available dependencies (`src/application/env.ts`):
+The `AppEnv` type defines all available dependencies (`src/application/env.ts`), including conversation, user, and auth token operations.
+
+### Parallel Operations with fp-ts
+
+Use `sequenceS(ApplyPar)` for parallel `TaskEither` execution:
 
 ```typescript
-export type AppEnv = {
-  readonly getConversation: (id: ConversationId) => TaskEither<AppError, Conversation>;
-  readonly getMessagesByConversation: (id: ConversationId) => TaskEither<AppError, readonly Message[]>;
-  readonly saveConversation: (conversation: Conversation) => TaskEither<AppError, Conversation>;
-  readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
-  readonly generateChatCompletion: (messages: readonly ChatMessage[]) => TaskEither<AppError, GenerateResponse>;
-};
+import { sequenceS } from 'fp-ts/Apply';
+import { ApplyPar, tryCatch } from 'fp-ts/TaskEither';
+
+// Run in parallel
+sequenceS(ApplyPar)({
+  accessToken: tryCatch(() => createAccessToken(payload), dbError),
+  refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
+})
 ```
 
 ### tRPC Error Handling
@@ -138,11 +143,24 @@ Use `safeHandler` wrapper for mutations/queries (`src/presentation/trpc/errors.t
 import { safeHandler } from '~/presentation/trpc/errors';
 
 export const chatRouter = router({
+  // Public route
   createConversation: publicProcedure
     .input(CreateConversationInputSchema)
     .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(ctx.env))),
+
+  // Protected route (requires auth)
+  me: protectedProcedure
+    .query(safeHandler(({ ctx }) => getCurrentUserUseCase(ctx.userId)(ctx.env))),
 });
 ```
+
+### Authentication
+
+Auth uses HTTP-only cookies with JWT tokens (`src/infrastructure/auth/`):
+
+- `createAccessToken` / `createRefreshToken` - JWT creation
+- `setAuthCookies` / `clearAuthCookies` - Cookie management
+- `protectedProcedure` - tRPC middleware that validates tokens and auto-refreshes
 
 ### Test Fixtures
 
