@@ -1,4 +1,16 @@
-import { notFound, insertFailed, validationError, dbError, aiError, getErrorMessage } from '~/domain/errors';
+import {
+  notFound,
+  insertFailed,
+  validationError,
+  dbError,
+  aiError,
+  invalidCredentials,
+  emailAlreadyExists,
+  tokenExpired,
+  invalidToken,
+  unauthorized,
+  getErrorMessage,
+} from '~/domain/errors';
 
 describe('error constructors', () => {
   describe('notFound', () => {
@@ -71,6 +83,41 @@ describe('error constructors', () => {
       });
     });
   });
+
+  describe('invalidCredentials', () => {
+    it('should create InvalidCredentials error', () => {
+      const error = invalidCredentials();
+      expect(error).toEqual({ _tag: 'InvalidCredentials' });
+    });
+  });
+
+  describe('emailAlreadyExists', () => {
+    it('should create EmailAlreadyExists error with email', () => {
+      const error = emailAlreadyExists('test@example.com');
+      expect(error).toEqual({ _tag: 'EmailAlreadyExists', email: 'test@example.com' });
+    });
+  });
+
+  describe('tokenExpired', () => {
+    it('should create TokenExpired error', () => {
+      const error = tokenExpired();
+      expect(error).toEqual({ _tag: 'TokenExpired' });
+    });
+  });
+
+  describe('invalidToken', () => {
+    it('should create InvalidToken error', () => {
+      const error = invalidToken();
+      expect(error).toEqual({ _tag: 'InvalidToken' });
+    });
+  });
+
+  describe('unauthorized', () => {
+    it('should create Unauthorized error', () => {
+      const error = unauthorized();
+      expect(error).toEqual({ _tag: 'Unauthorized' });
+    });
+  });
 });
 
 describe('getErrorMessage', () => {
@@ -85,6 +132,11 @@ describe('getErrorMessage', () => {
     [dbError('string error'), 'Database operation failed'],
     [aiError('API timeout', new Error('timeout')), 'AI error: API timeout'],
     [aiError('Rate limit exceeded', null), 'AI error: Rate limit exceeded'],
+    [invalidCredentials(), 'Invalid email or password'],
+    [emailAlreadyExists('test@example.com'), 'Email test@example.com is already registered'],
+    [tokenExpired(), 'Token has expired'],
+    [invalidToken(), 'Invalid token'],
+    [unauthorized(), 'Authentication required'],
   ])('should return correct message for %o', (error, expected) => {
     expect(getErrorMessage(error)).toBe(expected);
   });

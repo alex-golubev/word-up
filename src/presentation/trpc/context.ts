@@ -1,5 +1,6 @@
 import { createDBClient } from '~/infrastructure/db/client';
 import { createAppEnv } from '~/infrastructure/env';
+import { getAuthCookies } from '~/infrastructure/auth';
 import type { AppEnv } from '~/application/env';
 
 let cachedEnv: AppEnv | null = null;
@@ -15,6 +16,13 @@ const getEnv = (): AppEnv => {
   return cachedEnv;
 };
 
-export const createContext = () => ({ env: getEnv() });
+export const createContext = async () => {
+  const { accessToken, refreshToken } = await getAuthCookies();
+  return {
+    env: getEnv(),
+    accessToken,
+    refreshToken,
+  };
+};
 
-export type Context = ReturnType<typeof createContext>;
+export type Context = Awaited<ReturnType<typeof createContext>>;
