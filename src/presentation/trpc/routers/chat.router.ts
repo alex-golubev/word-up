@@ -61,6 +61,6 @@ export const chatRouter = router({
     ctx,
     input,
   }): AsyncGenerator<StreamEvent> {
-    yield* generateResponseStreamUseCase(input, ctx.env);
+    yield* generateResponseStreamUseCase(input, ctx.env, ctx.signal);
   }),
 });

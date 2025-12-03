@@ -35,10 +35,16 @@ const buildChatMessages = (scenario: Scenario, messages: readonly Message[]): re
  * Note: This use case does NOT follow the Reader pattern because async generators
  * are fundamentally incompatible with TaskEither. Instead, `env` is passed directly
  * as a parameter.
+ *
+ * @param signal - Optional AbortSignal to cancel the stream. When aborted:
+ *   - OpenAI request is cancelled (saves tokens)
+ *   - No message is saved to DB
+ *   - Generator returns early without error
  */
 export const generateResponseStreamUseCase = (
   params: GenerateResponseStreamParams,
-  env: AppEnv
+  env: AppEnv,
+  signal?: AbortSignal
 ): AsyncGenerator<StreamEvent, void, undefined> => {
   return (async function* () {
     // Step 1: Fetch messages
@@ -53,7 +59,7 @@ export const generateResponseStreamUseCase = (
     const chatMessages = buildChatMessages(params.scenario, messages);
 
     // Step 3: Start stream
-    const streamResult = await env.generateChatCompletionStream(chatMessages)();
+    const streamResult = await env.generateChatCompletionStream(chatMessages, signal)();
     if (isLeft(streamResult)) {
       yield { type: 'error', error: getErrorMessage(streamResult.left) };
       return;
@@ -64,10 +70,13 @@ export const generateResponseStreamUseCase = (
     let fullContent = '';
     try {
       for await (const delta of stream) {
+        if (signal?.aborted) return;
         fullContent += delta;
         yield { type: 'delta', content: delta };
       }
     } catch (error) {
+      // Ignore abort errors — client disconnected, nothing to report
+      if (signal?.aborted) return;
       yield {
         type: 'error',
         error: error instanceof Error ? error.message : 'Stream interrupted',
@@ -75,13 +84,16 @@ export const generateResponseStreamUseCase = (
       return;
     }
 
-    // Step 5: Validate content is not empty
+    // Step 5: Skip saving if aborted
+    if (signal?.aborted) return;
+
+    // Step 6: Validate content is not empty
     if (!fullContent.trim()) {
       yield { type: 'error', error: 'AI returned empty response' };
       return;
     }
 
-    // Step 6: Create and save complete message to DB
+    // Step 7: Create and save complete message to DB
     let message;
     try {
       message = messageCreate({
@@ -103,7 +115,7 @@ export const generateResponseStreamUseCase = (
       return;
     }
 
-    // Step 7: Yield done event with message ID
+    // Step 8: Yield done event with message ID
     yield {
       type: 'done',
       messageId: message.id,

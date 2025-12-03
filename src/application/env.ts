@@ -21,7 +21,8 @@ export type AppEnv = {
   readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
   readonly generateChatCompletion: (messages: readonly ChatMessage[]) => TaskEither<AppError, GenerateResponse>;
   readonly generateChatCompletionStream: (
-    messages: readonly ChatMessage[]
+    messages: readonly ChatMessage[],
+    signal?: AbortSignal
   ) => TaskEither<AppError, ChatCompletionStream>;
 
   readonly getUserById: (id: UserId) => TaskEither<AppError, User>;

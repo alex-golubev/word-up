@@ -10,6 +10,28 @@ export const createMockStream = (chunks: string[]): ChatCompletionStream => ({
   })(),
 });
 
+export const createThrowingStream = (chunks: string[], errorAfter: number): ChatCompletionStream => ({
+  stream: (async function* () {
+    for (let i = 0; i < chunks.length; i++) {
+      if (i === errorAfter) {
+        throw new Error('Stream connection lost');
+      }
+      yield chunks[i];
+    }
+  })(),
+});
+
+export const createThrowingStreamWithNonError = (chunks: string[], errorAfter: number): ChatCompletionStream => ({
+  stream: (async function* () {
+    for (let i = 0; i < chunks.length; i++) {
+      if (i === errorAfter) {
+        throw 'Non-error string thrown';
+      }
+      yield chunks[i];
+    }
+  })(),
+});
+
 export const createMockEnv = (overrides: Partial<AppEnv> = {}): AppEnv => ({
   // Conversation & Message
   getConversation: jest.fn().mockReturnValue(right(null)),

@@ -8,19 +8,28 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
+const mockGenerateChatCompletionStream = jest.fn();
+
 jest.mock('~/infrastructure/effects/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn().mockReturnValue(right({ content: 'mocked response' })),
+    generateChatCompletionStream: mockGenerateChatCompletionStream,
   }),
 }));
 
 import { chatRouter } from '~/presentation/trpc/routers/chat.router';
-import { TEST_UUID, createMockDB, createTestConversationRow, createTestMessageRow } from '~/test/fixtures';
+import {
+  TEST_UUID,
+  createMockDB,
+  createTestConversationRow,
+  createTestMessageRow,
+  createTestScenario,
+} from '~/test/fixtures';
 import { createAppEnv } from '~/infrastructure/env';
 
 const createCaller = (db: ReturnType<typeof createMockDB>) => {
   const env = createAppEnv({ db: db as never, openai: { apiKey: 'test-key' } });
-  return chatRouter.createCaller({ env, accessToken: null, refreshToken: null });
+  return chatRouter.createCaller({ env, accessToken: null, refreshToken: null, signal: new AbortController().signal });
 };
 
 describe('chatRouter', () => {
@@ -234,6 +243,50 @@ describe('chatRouter', () => {
       ).rejects.toMatchObject({
         code: 'INTERNAL_SERVER_ERROR',
       });
+    });
+  });
+
+  describe('generateResponseStream', () => {
+    const createMockStreamResult = (chunks: string[]) =>
+      right({
+        stream: (async function* () {
+          for (const chunk of chunks) {
+            yield chunk;
+          }
+        })(),
+      });
+
+    beforeEach(() => {
+      mockGenerateChatCompletionStream.mockReset();
+    });
+
+    it('should stream response successfully', async () => {
+      const mockDb = createMockDB();
+      const messageRow = createTestMessageRow();
+
+      // getMessagesByConversation
+      mockDb._mocks.mockWhere.mockReturnValue({
+        orderBy: jest.fn().mockResolvedValue([messageRow]),
+      });
+      // saveMessage
+      mockDb._mocks.mockReturning.mockResolvedValue([messageRow]);
+
+      mockGenerateChatCompletionStream.mockReturnValue(createMockStreamResult(['Hello', ' World']));
+
+      const caller = createCaller(mockDb);
+      const stream = await caller.generateResponseStream({
+        conversationId: TEST_UUID.conversation,
+        scenario: createTestScenario(),
+      });
+
+      const events = [];
+      for await (const event of stream) {
+        events.push(event);
+      }
+
+      expect(events.length).toBeGreaterThan(0);
+      expect(events.some((e) => e.type === 'delta')).toBe(true);
+      expect(events.some((e) => e.type === 'done')).toBe(true);
     });
   });
 });

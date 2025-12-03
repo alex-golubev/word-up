@@ -156,7 +156,12 @@ describe('runEffect', () => {
 });
 
 describe('safeHandler', () => {
-  const mockContext: Context = { env: createMockEnv(), accessToken: null, refreshToken: null };
+  const mockContext: Context = {
+    env: createMockEnv(),
+    accessToken: null,
+    refreshToken: null,
+    signal: new AbortController().signal,
+  };
 
   it('should return result when TaskEither succeeds', async () => {
     const handler = safeHandler(({ input }: { ctx: Context; input: { value: number } }) =>

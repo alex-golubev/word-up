@@ -39,6 +39,7 @@ const createCaller = (
     env,
     accessToken: opts.accessToken ?? null,
     refreshToken: opts.refreshToken ?? null,
+    signal: new AbortController().signal,
   });
 };
 

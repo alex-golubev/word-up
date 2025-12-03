@@ -16,12 +16,13 @@ const getEnv = (): AppEnv => {
   return cachedEnv;
 };
 
-export const createContext = async () => {
+export const createContext = async (opts: { req: Request }) => {
   const { accessToken, refreshToken } = await getAuthCookies();
   return {
     env: getEnv(),
     accessToken,
     refreshToken,
+    signal: opts.req.signal,
   };
 };
 

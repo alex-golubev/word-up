@@ -94,8 +94,10 @@ export default function TestPage() {
         }
       }
     } catch (e) {
-      // tRPC async generator бросает undefined при завершении — игнорируем
-      if (e !== undefined) {
+      // tRPC async generator throws undefined on normal completion (known issue)
+      // https://github.com/trpc/trpc/issues/5851
+      const isStreamEndSignal = e === undefined;
+      if (!isStreamEndSignal) {
         setError(e instanceof Error ? e.message : 'Failed to send message');
         setPendingUserMessage(null);
       }
