@@ -1,8 +1,8 @@
 import { isLeft } from 'fp-ts/Either';
 import { messageCreate } from '~/domain/functions/message';
+import { getErrorMessage } from '~/domain/types';
 import type { AppEnv } from '~/application/env';
 import type { ChatMessage, ConversationId, Message, Scenario, StreamEvent } from '~/domain/types';
-import { getErrorMessage } from '~/domain/types';
 
 export type GenerateResponseStreamParams = {
   readonly conversationId: ConversationId;
@@ -36,8 +36,10 @@ const buildChatMessages = (scenario: Scenario, messages: readonly Message[]): re
  * are fundamentally incompatible with TaskEither. Instead, `env` is passed directly
  * as a parameter.
  *
+ * @param params
+ * @param env
  * @param signal - Optional AbortSignal to cancel the stream. When aborted:
- *   - OpenAI request is cancelled (saves tokens)
+ *   - OpenAI request is canceled (saves tokens)
  *   - No message is saved to DB
  *   - Generator returns early without error
  */
@@ -58,7 +60,7 @@ export const generateResponseStreamUseCase = (
     // Step 2: Build chat messages
     const chatMessages = buildChatMessages(params.scenario, messages);
 
-    // Step 3: Start stream
+    // Step 3: Start a stream
     const streamResult = await env.generateChatCompletionStream(chatMessages, signal)();
     if (isLeft(streamResult)) {
       yield { type: 'error', error: getErrorMessage(streamResult.left) };
@@ -93,7 +95,7 @@ export const generateResponseStreamUseCase = (
       return;
     }
 
-    // Step 7: Create and save complete message to DB
+    // Step 7: Create and save a complete message to DB
     let message;
     try {
       message = messageCreate({
