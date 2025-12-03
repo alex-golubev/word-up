@@ -10,6 +10,10 @@ export type OpenAiConfig = {
   readonly model?: string;
 };
 
+export type ChatCompletionStream = {
+  readonly stream: AsyncIterable<string>;
+};
+
 const DEFAULT_MODEL = 'gpt-4o-mini';
 
 export const createOpenAIEffects = (config: OpenAiConfig) => {
@@ -29,6 +33,33 @@ export const createOpenAIEffects = (config: OpenAiConfig) => {
           return { content };
         },
         (error) => aiError('Failed to generate response', error)
+      ),
+
+    generateChatCompletionStream: (
+      messages: readonly ChatMessage[],
+      signal?: AbortSignal
+    ): TaskEither<AppError, ChatCompletionStream> =>
+      tryCatch(
+        async () => {
+          const response = await client.chat.completions.create(
+            {
+              model,
+              messages: messages.map((m) => ({ role: m.role, content: m.content })),
+              stream: true,
+            },
+            { signal }
+          );
+
+          const stream = (async function* () {
+            for await (const chunk of response) {
+              const content = chunk.choices[0]?.delta?.content;
+              if (content) yield content;
+            }
+          })();
+
+          return { stream };
+        },
+        (error) => aiError('Failed to start streaming response', error)
       ),
   };
 };

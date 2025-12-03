@@ -47,7 +47,7 @@ describe('trpc', () => {
     const createCaller = (accessToken: string | null, refreshToken: string | null = null) => {
       const db = createMockDB();
       const env = createAppEnv({ db: db as never, openai: { apiKey: 'test-key' } });
-      return testRouter.createCaller({ env, accessToken, refreshToken });
+      return testRouter.createCaller({ env, accessToken, refreshToken, signal: new AbortController().signal });
     };
 
     beforeEach(() => {

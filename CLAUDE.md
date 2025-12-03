@@ -132,7 +132,7 @@ import { ApplyPar, tryCatch } from 'fp-ts/TaskEither';
 sequenceS(ApplyPar)({
   accessToken: tryCatch(() => createAccessToken(payload), dbError),
   refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
-})
+});
 ```
 
 ### tRPC Error Handling
@@ -149,8 +149,7 @@ export const chatRouter = router({
     .mutation(safeHandler(({ ctx, input }) => createConversationUseCase(input)(ctx.env))),
 
   // Protected route (requires auth)
-  me: protectedProcedure
-    .query(safeHandler(({ ctx }) => getCurrentUserUseCase(ctx.userId)(ctx.env))),
+  me: protectedProcedure.query(safeHandler(({ ctx }) => getCurrentUserUseCase(ctx.userId)(ctx.env))),
 });
 ```
 

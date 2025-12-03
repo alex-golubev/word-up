@@ -122,4 +122,95 @@ describe('createOpenAIEffects', () => {
       });
     });
   });
+
+  describe('generateChatCompletionStream', () => {
+    const createMockAsyncIterable = (chunks: { choices: { delta: { content?: string } }[] }[]) => ({
+      [Symbol.asyncIterator]: async function* () {
+        for (const chunk of chunks) {
+          yield chunk;
+        }
+      },
+    });
+
+    it('should return stream on successful response', async () => {
+      const mockChunks = [
+        { choices: [{ delta: { content: 'Hello' } }] },
+        { choices: [{ delta: { content: ' World' } }] },
+        { choices: [{ delta: { content: '!' } }] },
+      ];
+      mockCreate.mockResolvedValue(createMockAsyncIterable(mockChunks));
+
+      const effects = createOpenAIEffects({ apiKey: 'test-key' });
+      const messages = [{ role: 'user' as const, content: 'Hello!' }];
+
+      const result = await effects.generateChatCompletionStream(messages)();
+
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        const chunks: string[] = [];
+        for await (const chunk of result.right.stream) {
+          chunks.push(chunk);
+        }
+        expect(chunks).toEqual(['Hello', ' World', '!']);
+      }
+    });
+
+    it('should pass signal to OpenAI client', async () => {
+      mockCreate.mockResolvedValue(createMockAsyncIterable([]));
+      const abortController = new AbortController();
+
+      const effects = createOpenAIEffects({ apiKey: 'test-key' });
+      const messages = [{ role: 'user' as const, content: 'test' }];
+
+      await effects.generateChatCompletionStream(messages, abortController.signal)();
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        { model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'test' }], stream: true },
+        { signal: abortController.signal }
+      );
+    });
+
+    it('should skip chunks without content', async () => {
+      const mockChunks = [
+        { choices: [{ delta: { content: 'Hello' } }] },
+        { choices: [{ delta: {} }] }, // No content
+        { choices: [{ delta: { content: undefined } }] }, // Undefined content
+        { choices: [{ delta: { content: ' World' } }] },
+      ];
+      mockCreate.mockResolvedValue(createMockAsyncIterable(mockChunks));
+
+      const effects = createOpenAIEffects({ apiKey: 'test-key' });
+      const messages = [{ role: 'user' as const, content: 'test' }];
+
+      const result = await effects.generateChatCompletionStream(messages)();
+
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        const chunks: string[] = [];
+        for await (const chunk of result.right.stream) {
+          chunks.push(chunk);
+        }
+        expect(chunks).toEqual(['Hello', ' World']);
+      }
+    });
+
+    it('should return AiError when stream fails to start', async () => {
+      const apiError = new Error('Connection failed');
+      mockCreate.mockRejectedValue(apiError);
+
+      const effects = createOpenAIEffects({ apiKey: 'test-key' });
+      const messages = [{ role: 'user' as const, content: 'Hello!' }];
+
+      const result = await effects.generateChatCompletionStream(messages)();
+
+      expect(isLeft(result)).toBe(true);
+      if (isLeft(result)) {
+        expect(result.left).toEqual({
+          _tag: 'AiError',
+          message: 'Failed to start streaming response',
+          cause: apiError,
+        });
+      }
+    });
+  });
 });

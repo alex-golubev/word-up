@@ -5,7 +5,7 @@ jest.mock('~/utils/transformer', () => ({
 }));
 
 jest.mock('@trpc/client', () => ({
-  httpBatchLink: jest.fn(() => ({})),
+  httpBatchStreamLink: jest.fn(() => ({})),
 }));
 
 jest.mock('~/presentation/hooks/trpc', () => ({
@@ -17,7 +17,7 @@ jest.mock('~/presentation/hooks/trpc', () => ({
 
 import { TrpcProvider } from './TrpcProvider';
 import { trpc } from '~/presentation/hooks/trpc';
-import { httpBatchLink } from '@trpc/client';
+import { httpBatchStreamLink } from '@trpc/client';
 
 describe('TrpcProvider', () => {
   it('should render children', () => {
@@ -31,14 +31,14 @@ describe('TrpcProvider', () => {
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
 
-  it('should create trpc client with httpBatchLink', () => {
+  it('should create trpc client with httpBatchStreamLink', () => {
     render(
       <TrpcProvider>
         <div>Content</div>
       </TrpcProvider>
     );
 
-    expect(httpBatchLink).toHaveBeenCalledWith({
+    expect(httpBatchStreamLink).toHaveBeenCalledWith({
       url: '/api/trpc',
       transformer: {},
     });
