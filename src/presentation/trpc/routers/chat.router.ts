@@ -10,9 +10,11 @@ import {
   UserIdSchema,
   UserLevelSchema,
 } from '~/domain/types';
+import type { StreamEvent } from '~/domain/types';
 import {
   createConversationUseCase,
   generateResponseUseCase,
+  generateResponseStreamUseCase,
   getConversationUseCase,
   sendMessageUseCase,
 } from '~/application/use-cases';
@@ -54,4 +56,11 @@ export const chatRouter = router({
   generateResponse: publicProcedure
     .input(GenerateResponseInputSchema)
     .mutation(safeHandler(({ ctx, input }) => generateResponseUseCase(input)(ctx.env))),
+
+  generateResponseStream: publicProcedure.input(GenerateResponseInputSchema).mutation(async function* ({
+    ctx,
+    input,
+  }): AsyncGenerator<StreamEvent> {
+    yield* generateResponseStreamUseCase(input, ctx.env);
+  }),
 });
