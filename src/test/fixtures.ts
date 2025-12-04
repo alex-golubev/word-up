@@ -48,13 +48,13 @@ export const createTestConversation = (overrides?: Partial<Conversation>): Conve
 
 export const createTestScenario = (overrides?: Partial<Scenario>): Scenario => ({
   id: TEST_SCENARIO_ID,
-  title: 'Coffee Shop',
-  description: 'Order a coffee at a local cafe',
-  role: 'barista',
+  title: 'Test Scenario',
+  description: 'A test scenario for unit tests',
+  role: 'You are a helpful assistant',
   userLevel: 'beginner',
   targetLanguage: 'en',
-  startingMessage: 'Hi, welcome! What can I get for you today?',
-  vocabulary: ['coffee', 'latte', 'espresso'],
+  startingMessage: 'Hello! How can I help you?',
+  vocabulary: ['hello', 'help', 'thanks'],
   ...overrides,
 });
 

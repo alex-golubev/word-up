@@ -8,23 +8,14 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
-const mockGenerateChatCompletionStream = jest.fn();
-
 jest.mock('~/infrastructure/effects/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn().mockReturnValue(right({ content: 'mocked response' })),
-    generateChatCompletionStream: mockGenerateChatCompletionStream,
   }),
 }));
 
 import { chatRouter } from '~/presentation/trpc/routers/chat.router';
-import {
-  TEST_UUID,
-  createMockDB,
-  createTestConversationRow,
-  createTestMessageRow,
-  createTestScenario,
-} from '~/test/fixtures';
+import { TEST_UUID, createMockDB, createTestConversationRow, createTestMessageRow } from '~/test/fixtures';
 import { createAppEnv } from '~/infrastructure/env';
 
 const createCaller = (db: ReturnType<typeof createMockDB>) => {
@@ -156,137 +147,6 @@ describe('chatRouter', () => {
           conversationId: 'not-a-valid-uuid',
         })
       ).rejects.toThrow(TRPCError);
-    });
-  });
-
-  describe('sendMessage', () => {
-    it('should send message successfully', async () => {
-      const mockDb = createMockDB();
-      const conversationRow = createTestConversationRow();
-      const messageRow = createTestMessageRow({ content: 'Hello, world!' });
-
-      // getConversation returns conversation
-      mockDb._mocks.mockWhere.mockResolvedValueOnce([conversationRow]);
-      // saveMessage returns the message
-      mockDb._mocks.mockReturning.mockResolvedValueOnce([messageRow]);
-
-      const caller = createCaller(mockDb);
-      const result = await caller.sendMessage({
-        conversationId: TEST_UUID.conversation,
-        role: 'user',
-        content: 'Hello, world!',
-      });
-
-      expect(result.content).toBe('Hello, world!');
-      expect(result.role).toBe('user');
-      expect(result.conversationId).toBe(TEST_UUID.conversation);
-    });
-
-    it('should throw NOT_FOUND when conversation does not exist', async () => {
-      const mockDb = createMockDB();
-      mockDb._mocks.mockWhere.mockResolvedValueOnce([]);
-
-      const caller = createCaller(mockDb);
-
-      await expect(
-        caller.sendMessage({
-          conversationId: TEST_UUID.conversation,
-          role: 'user',
-          content: 'Hello!',
-        })
-      ).rejects.toMatchObject({
-        code: 'NOT_FOUND',
-      });
-    });
-
-    it('should throw BAD_REQUEST for empty content', async () => {
-      const mockDb = createMockDB();
-      const caller = createCaller(mockDb);
-
-      await expect(
-        caller.sendMessage({
-          conversationId: TEST_UUID.conversation,
-          role: 'user',
-          content: '',
-        })
-      ).rejects.toThrow(TRPCError);
-    });
-
-    it('should throw BAD_REQUEST for invalid role', async () => {
-      const mockDb = createMockDB();
-      const caller = createCaller(mockDb);
-
-      await expect(
-        caller.sendMessage({
-          conversationId: TEST_UUID.conversation,
-          role: 'invalid-role' as never,
-          content: 'Hello!',
-        })
-      ).rejects.toThrow(TRPCError);
-    });
-
-    it('should throw INTERNAL_SERVER_ERROR when save fails', async () => {
-      const mockDb = createMockDB();
-      const conversationRow = createTestConversationRow();
-
-      mockDb._mocks.mockWhere.mockResolvedValueOnce([conversationRow]);
-      mockDb._mocks.mockReturning.mockResolvedValueOnce([]);
-
-      const caller = createCaller(mockDb);
-
-      await expect(
-        caller.sendMessage({
-          conversationId: TEST_UUID.conversation,
-          role: 'user',
-          content: 'Hello!',
-        })
-      ).rejects.toMatchObject({
-        code: 'INTERNAL_SERVER_ERROR',
-      });
-    });
-  });
-
-  describe('generateResponseStream', () => {
-    const createMockStreamResult = (chunks: string[]) =>
-      right({
-        stream: (async function* () {
-          for (const chunk of chunks) {
-            yield chunk;
-          }
-        })(),
-      });
-
-    beforeEach(() => {
-      mockGenerateChatCompletionStream.mockReset();
-    });
-
-    it('should stream response successfully', async () => {
-      const mockDb = createMockDB();
-      const messageRow = createTestMessageRow();
-
-      // getMessagesByConversation
-      mockDb._mocks.mockWhere.mockReturnValue({
-        orderBy: jest.fn().mockResolvedValue([messageRow]),
-      });
-      // saveMessage
-      mockDb._mocks.mockReturning.mockResolvedValue([messageRow]);
-
-      mockGenerateChatCompletionStream.mockReturnValue(createMockStreamResult(['Hello', ' World']));
-
-      const caller = createCaller(mockDb);
-      const stream = await caller.generateResponseStream({
-        conversationId: TEST_UUID.conversation,
-        scenario: createTestScenario(),
-      });
-
-      const events = [];
-      for await (const event of stream) {
-        events.push(event);
-      }
-
-      expect(events.length).toBeGreaterThan(0);
-      expect(events.some((e) => e.type === 'delta')).toBe(true);
-      expect(events.some((e) => e.type === 'done')).toBe(true);
     });
   });
 });

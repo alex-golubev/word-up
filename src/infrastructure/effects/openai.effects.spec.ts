@@ -1,12 +1,18 @@
 import { isLeft, isRight } from 'fp-ts/Either';
 
-const mockCreate = jest.fn();
+const mockChatCreate = jest.fn();
+const mockSpeechCreate = jest.fn();
 
 jest.mock('openai', () => {
   return jest.fn().mockImplementation(() => ({
     chat: {
       completions: {
-        create: mockCreate,
+        create: mockChatCreate,
+      },
+    },
+    audio: {
+      speech: {
+        create: mockSpeechCreate,
       },
     },
   }));
@@ -21,7 +27,7 @@ describe('createOpenAIEffects', () => {
 
   describe('generateChatCompletion', () => {
     it('should return content on successful response', async () => {
-      mockCreate.mockResolvedValue({
+      mockChatCreate.mockResolvedValue({
         choices: [{ message: { content: 'Hello from AI!' } }],
       });
 
@@ -34,14 +40,14 @@ describe('createOpenAIEffects', () => {
       if (isRight(result)) {
         expect(result.right).toEqual({ content: 'Hello from AI!' });
       }
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockChatCreate).toHaveBeenCalledWith({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: 'Hello!' }],
       });
     });
 
     it('should use custom model when provided', async () => {
-      mockCreate.mockResolvedValue({
+      mockChatCreate.mockResolvedValue({
         choices: [{ message: { content: 'response' } }],
       });
 
@@ -50,7 +56,7 @@ describe('createOpenAIEffects', () => {
 
       await effects.generateChatCompletion(messages)();
 
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockChatCreate).toHaveBeenCalledWith({
         model: 'gpt-4',
         messages: [{ role: 'user', content: 'test' }],
       });
@@ -58,7 +64,7 @@ describe('createOpenAIEffects', () => {
 
     it('should return AiError when API call fails', async () => {
       const apiError = new Error('API rate limit exceeded');
-      mockCreate.mockRejectedValue(apiError);
+      mockChatCreate.mockRejectedValue(apiError);
 
       const effects = createOpenAIEffects({ apiKey: 'test-key' });
       const messages = [{ role: 'user' as const, content: 'Hello!' }];
@@ -77,7 +83,7 @@ describe('createOpenAIEffects', () => {
     });
 
     it('should return AiError when response content is null', async () => {
-      mockCreate.mockResolvedValue({
+      mockChatCreate.mockResolvedValue({
         choices: [{ message: { content: null } }],
       });
 
@@ -97,7 +103,7 @@ describe('createOpenAIEffects', () => {
     });
 
     it('should map multiple messages correctly', async () => {
-      mockCreate.mockResolvedValue({
+      mockChatCreate.mockResolvedValue({
         choices: [{ message: { content: 'response' } }],
       });
 
@@ -111,7 +117,7 @@ describe('createOpenAIEffects', () => {
 
       await effects.generateChatCompletion(messages)();
 
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockChatCreate).toHaveBeenCalledWith({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'You are helpful.' },
@@ -123,91 +129,56 @@ describe('createOpenAIEffects', () => {
     });
   });
 
-  describe('generateChatCompletionStream', () => {
-    const createMockAsyncIterable = (chunks: { choices: { delta: { content?: string } }[] }[]) => ({
-      [Symbol.asyncIterator]: async function* () {
-        for (const chunk of chunks) {
-          yield chunk;
-        }
-      },
+  describe('generateSpeech', () => {
+    const createMockAudioResponse = (base64Content: string) => ({
+      arrayBuffer: () => Promise.resolve(Buffer.from(base64Content)),
     });
 
-    it('should return stream on successful response', async () => {
-      const mockChunks = [
-        { choices: [{ delta: { content: 'Hello' } }] },
-        { choices: [{ delta: { content: ' World' } }] },
-        { choices: [{ delta: { content: '!' } }] },
-      ];
-      mockCreate.mockResolvedValue(createMockAsyncIterable(mockChunks));
+    it('should return base64 audio on successful response', async () => {
+      mockSpeechCreate.mockResolvedValue(createMockAudioResponse('audio-content'));
 
       const effects = createOpenAIEffects({ apiKey: 'test-key' });
-      const messages = [{ role: 'user' as const, content: 'Hello!' }];
-
-      const result = await effects.generateChatCompletionStream(messages)();
+      const result = await effects.generateSpeech('Hello world')();
 
       expect(isRight(result)).toBe(true);
       if (isRight(result)) {
-        const chunks: string[] = [];
-        for await (const chunk of result.right.stream) {
-          chunks.push(chunk);
-        }
-        expect(chunks).toEqual(['Hello', ' World', '!']);
+        expect(result.right.format).toBe('mp3');
+        expect(typeof result.right.audio).toBe('string');
       }
+      expect(mockSpeechCreate).toHaveBeenCalledWith({
+        model: 'tts-1',
+        input: 'Hello world',
+        voice: 'shimmer',
+        response_format: 'mp3',
+      });
     });
 
-    it('should pass signal to OpenAI client', async () => {
-      mockCreate.mockResolvedValue(createMockAsyncIterable([]));
-      const abortController = new AbortController();
+    it('should use custom voice when provided', async () => {
+      mockSpeechCreate.mockResolvedValue(createMockAudioResponse('audio'));
 
       const effects = createOpenAIEffects({ apiKey: 'test-key' });
-      const messages = [{ role: 'user' as const, content: 'test' }];
+      await effects.generateSpeech('Test', 'nova')();
 
-      await effects.generateChatCompletionStream(messages, abortController.signal)();
-
-      expect(mockCreate).toHaveBeenCalledWith(
-        { model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'test' }], stream: true },
-        { signal: abortController.signal }
-      );
+      expect(mockSpeechCreate).toHaveBeenCalledWith({
+        model: 'tts-1',
+        input: 'Test',
+        voice: 'nova',
+        response_format: 'mp3',
+      });
     });
 
-    it('should skip chunks without content', async () => {
-      const mockChunks = [
-        { choices: [{ delta: { content: 'Hello' } }] },
-        { choices: [{ delta: {} }] }, // No content
-        { choices: [{ delta: { content: undefined } }] }, // Undefined content
-        { choices: [{ delta: { content: ' World' } }] },
-      ];
-      mockCreate.mockResolvedValue(createMockAsyncIterable(mockChunks));
+    it('should return AiError when API call fails', async () => {
+      const apiError = new Error('TTS quota exceeded');
+      mockSpeechCreate.mockRejectedValue(apiError);
 
       const effects = createOpenAIEffects({ apiKey: 'test-key' });
-      const messages = [{ role: 'user' as const, content: 'test' }];
-
-      const result = await effects.generateChatCompletionStream(messages)();
-
-      expect(isRight(result)).toBe(true);
-      if (isRight(result)) {
-        const chunks: string[] = [];
-        for await (const chunk of result.right.stream) {
-          chunks.push(chunk);
-        }
-        expect(chunks).toEqual(['Hello', ' World']);
-      }
-    });
-
-    it('should return AiError when stream fails to start', async () => {
-      const apiError = new Error('Connection failed');
-      mockCreate.mockRejectedValue(apiError);
-
-      const effects = createOpenAIEffects({ apiKey: 'test-key' });
-      const messages = [{ role: 'user' as const, content: 'Hello!' }];
-
-      const result = await effects.generateChatCompletionStream(messages)();
+      const result = await effects.generateSpeech('Hello')();
 
       expect(isLeft(result)).toBe(true);
       if (isLeft(result)) {
         expect(result.left).toEqual({
           _tag: 'AiError',
-          message: 'Failed to start streaming response',
+          message: 'Failed to generate speech',
           cause: apiError,
         });
       }

@@ -8,11 +8,12 @@ import type {
   Language,
   Message,
   RefreshToken,
+  SpeechResponse,
+  SpeechVoice,
   User,
   UserId,
   UserCreateParams,
 } from '~/domain/types';
-import type { ChatCompletionStream } from '~/infrastructure/effects/openai.effects';
 
 export type AppEnv = {
   readonly getConversation: (id: ConversationId) => TaskEither<AppError, Conversation>;
@@ -20,10 +21,7 @@ export type AppEnv = {
   readonly saveConversation: (conversation: Conversation) => TaskEither<AppError, Conversation>;
   readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
   readonly generateChatCompletion: (messages: readonly ChatMessage[]) => TaskEither<AppError, GenerateResponse>;
-  readonly generateChatCompletionStream: (
-    messages: readonly ChatMessage[],
-    signal?: AbortSignal
-  ) => TaskEither<AppError, ChatCompletionStream>;
+  readonly generateSpeech: (text: string, voice?: SpeechVoice) => TaskEither<AppError, SpeechResponse>;
 
   readonly getUserById: (id: UserId) => TaskEither<AppError, User>;
   readonly getUserByEmail: (email: string) => TaskEither<AppError, User | null>;
