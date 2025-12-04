@@ -10,14 +10,9 @@ import {
   UserIdSchema,
   UserLevelSchema,
 } from '~/domain/types';
-import type { StreamEvent } from '~/domain/types';
-import {
-  createConversationUseCase,
-  generateResponseUseCase,
-  generateResponseStreamUseCase,
-  getConversationUseCase,
-  sendMessageUseCase,
-} from '~/application/use-cases';
+import { createConversationUseCase, generateSpeechUseCase, getConversationUseCase } from '~/application/use-cases';
+import { generateResponseFromHistoryUseCase } from '~/application/use-cases/generate-response-from-history';
+import { saveMessagesUseCase } from '~/application/use-cases/save-messages';
 import { safeHandler } from '~/presentation/trpc/errors';
 
 const CreateConversationInputSchema = z.object({
@@ -29,15 +24,31 @@ const CreateConversationInputSchema = z.object({
 
 const GetConversationInputSchema = z.object({ conversationId: ConversationIdSchema });
 
-const SendMessageInputSchema = z.object({
-  conversationId: ConversationIdSchema,
+const GenerateSpeechInputSchema = z.object({
+  text: MessageContentSchema,
+  voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
+});
+
+const ChatMessageSchema = z.object({
   role: MessageRoleSchema,
   content: MessageContentSchema,
 });
 
-const GenerateResponseInputSchema = z.object({
-  conversationId: ConversationIdSchema,
+const GenerateResponseFromHistoryInputSchema = z.object({
   scenario: ScenarioSchema,
+  history: z.array(ChatMessageSchema),
+  userMessage: MessageContentSchema,
+});
+
+const SaveMessageItemSchema = z.object({
+  role: MessageRoleSchema,
+  content: MessageContentSchema,
+  createdAt: z.coerce.date(),
+});
+
+const SaveMessagesInputSchema = z.object({
+  conversationId: ConversationIdSchema,
+  messages: z.array(SaveMessageItemSchema),
 });
 
 export const chatRouter = router({
@@ -49,18 +60,15 @@ export const chatRouter = router({
     .input(GetConversationInputSchema)
     .query(safeHandler(({ ctx, input }) => getConversationUseCase(input.conversationId)(ctx.env))),
 
-  sendMessage: publicProcedure
-    .input(SendMessageInputSchema)
-    .mutation(safeHandler(({ ctx, input }) => sendMessageUseCase(input)(ctx.env))),
+  generateSpeech: publicProcedure
+    .input(GenerateSpeechInputSchema)
+    .mutation(safeHandler(({ ctx, input }) => generateSpeechUseCase(input)(ctx.env))),
 
-  generateResponse: publicProcedure
-    .input(GenerateResponseInputSchema)
-    .mutation(safeHandler(({ ctx, input }) => generateResponseUseCase(input)(ctx.env))),
+  generateResponseFromHistory: publicProcedure
+    .input(GenerateResponseFromHistoryInputSchema)
+    .mutation(safeHandler(({ ctx, input }) => generateResponseFromHistoryUseCase(input)(ctx.env))),
 
-  generateResponseStream: publicProcedure.input(GenerateResponseInputSchema).mutation(async function* ({
-    ctx,
-    input,
-  }): AsyncGenerator<StreamEvent> {
-    yield* generateResponseStreamUseCase(input, ctx.env, ctx.signal);
-  }),
+  saveMessages: publicProcedure
+    .input(SaveMessagesInputSchema)
+    .mutation(safeHandler(({ ctx, input }) => saveMessagesUseCase(input)(ctx.env))),
 });

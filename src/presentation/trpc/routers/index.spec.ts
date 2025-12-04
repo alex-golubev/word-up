@@ -13,7 +13,6 @@ describe('appRouter', () => {
     const procedures = appRouter._def.procedures as Record<string, unknown>;
     expect(procedures['chat.createConversation']).toBeDefined();
     expect(procedures['chat.getConversation']).toBeDefined();
-    expect(procedures['chat.sendMessage']).toBeDefined();
   });
 
   it('should export AppRouter type', () => {

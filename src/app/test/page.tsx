@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { trpc } from '~/presentation/hooks/trpc';
+import { useSyncedPlayback } from '~/presentation/hooks/useSyncedPlayback';
 import type { Conversation } from '~/domain/types';
 
 const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
@@ -21,7 +22,6 @@ export default function TestPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [userMessage, setUserMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -31,8 +31,18 @@ export default function TestPage() {
   };
 
   const createConversation = trpc.chat.createConversation.useMutation();
-  const sendMessage = trpc.chat.sendMessage.useMutation();
-  const generateResponseStream = trpc.chat.generateResponseStream.useMutation();
+  const generateResponseFromHistory = trpc.chat.generateResponseFromHistory.useMutation();
+  const saveMessages = trpc.chat.saveMessages.useMutation();
+  const generateSpeech = trpc.chat.generateSpeech.useMutation();
+  const {
+    play: playSynced,
+    stop: stopSynced,
+    clear: clearSynced,
+    isPlaying,
+    displayedText,
+    fullText,
+  } = useSyncedPlayback();
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const getConversation = trpc.chat.getConversation.useQuery(
     { conversationId: conversation?.id ?? ('' as never) },
     { enabled: !!conversation?.id }
@@ -60,50 +70,64 @@ export default function TestPage() {
     if (!conversation || !userMessage.trim()) return;
 
     const messageText = userMessage.trim();
+    const userMessageTime = new Date(); // Real time when user sent message
     setError(null);
     setIsLoading(true);
-    setStreamingContent('');
     setUserMessage('');
     setPendingUserMessage(messageText);
 
     try {
-      await sendMessage.mutateAsync({
-        conversationId: conversation.id,
-        role: 'user',
-        content: messageText,
-      });
-
-      const stream = await generateResponseStream.mutateAsync({
-        conversationId: conversation.id,
+      // 1. Generate AI response (history from client, no DB reads)
+      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const response = await generateResponseFromHistory.mutateAsync({
         scenario: TEST_SCENARIO,
+        history,
+        userMessage: messageText,
       });
 
-      for await (const event of stream) {
-        switch (event.type) {
-          case 'delta':
-            setStreamingContent((prev) => prev + event.content);
-            break;
-          case 'done':
-            await getConversation.refetch();
-            setPendingUserMessage(null);
-            setStreamingContent('');
-            break;
-          case 'error':
-            setError(event.error);
-            break;
-        }
+      const responseText = response.content;
+      const assistantMessageTime = new Date(); // Real time when AI responded
+
+      const saveAndRefresh = async () => {
+        await saveMessages.mutateAsync({
+          conversationId: conversation.id,
+          messages: [
+            { role: 'user', content: messageText, createdAt: userMessageTime },
+            { role: 'assistant', content: responseText, createdAt: assistantMessageTime },
+          ],
+        });
+        await getConversation.refetch();
+        setPendingUserMessage(null);
+      };
+
+      if (autoSpeak && responseText.trim()) {
+        const ttsResult = await generateSpeech.mutateAsync({ text: responseText });
+        playSynced(ttsResult.audio, responseText, async () => {
+          await saveAndRefresh();
+          requestAnimationFrame(() => clearSynced());
+        });
+      } else {
+        await saveAndRefresh();
       }
     } catch (e) {
-      // tRPC async generator throws undefined on normal completion (known issue)
-      // https://github.com/trpc/trpc/issues/5851
-      const isStreamEndSignal = e === undefined;
-      if (!isStreamEndSignal) {
-        setError(e instanceof Error ? e.message : 'Failed to send message');
-        setPendingUserMessage(null);
-      }
+      setError(e instanceof Error ? e.message : 'Failed to send message');
+      setPendingUserMessage(null);
     } finally {
       setIsLoading(false);
-      setStreamingContent('');
+    }
+  };
+
+  const handlePlayAudio = async (content: string) => {
+    if (isPlaying) {
+      stopSynced();
+      return;
+    }
+    try {
+      const result = await generateSpeech.mutateAsync({ text: content });
+      // Empty string = no karaoke text, just play audio
+      playSynced(result.audio, '');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate speech');
     }
   };
 
@@ -111,7 +135,7 @@ export default function TestPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, pendingUserMessage, streamingContent]);
+  }, [messages, pendingUserMessage, displayedText]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-indigo-50 via-white to-purple-50">
@@ -154,14 +178,25 @@ export default function TestPage() {
       ) : (
         <>
           <header className="border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-sm">
-            <div className="mx-auto flex max-w-lg items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-lg">☕</div>
-              <div>
-                <h1 className="font-semibold text-gray-800">{TEST_SCENARIO.title}</h1>
-                <p className="text-xs text-gray-500">
-                  {TEST_SCENARIO.userLevel} • {TEST_SCENARIO.targetLanguage.toUpperCase()}
-                </p>
+            <div className="mx-auto flex max-w-lg items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-lg">☕</div>
+                <div>
+                  <h1 className="font-semibold text-gray-800">{TEST_SCENARIO.title}</h1>
+                  <p className="text-xs text-gray-500">
+                    {TEST_SCENARIO.userLevel} • {TEST_SCENARIO.targetLanguage.toUpperCase()}
+                  </p>
+                </div>
               </div>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={autoSpeak}
+                  onChange={(e) => setAutoSpeak(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>🔊 Auto</span>
+              </label>
             </div>
           </header>
 
@@ -172,8 +207,8 @@ export default function TestPage() {
                   <p className="text-gray-400">Send a message to start practicing...</p>
                 </div>
               )}
-              {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                       msg.role === 'user'
@@ -181,26 +216,48 @@ export default function TestPage() {
                         : 'rounded-bl-md bg-white text-gray-800 shadow-sm'
                     }`}
                   >
-                    {msg.content}
+                    <div className="flex items-start gap-2">
+                      <span className="flex-1">{msg.content}</span>
+                      {msg.role === 'assistant' && (
+                        <button
+                          onClick={() => handlePlayAudio(msg.content)}
+                          disabled={generateSpeech.isPending || (isPlaying && !!fullText)}
+                          className="mt-0.5 flex-shrink-0 text-gray-400 transition-colors hover:text-indigo-600 disabled:opacity-50"
+                          title={isPlaying && !fullText ? 'Stop' : 'Play'}
+                        >
+                          {/* Show stop only for manual playback (fullText empty), not during karaoke */}
+                          {isPlaying && !fullText ? <span className="text-indigo-600">◼</span> : <span>🔊</span>}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
-              {pendingUserMessage && (
+              {/* Show pending user message until it appears in messages from server */}
+              {pendingUserMessage && !messages.some((m) => m.role === 'user' && m.content === pendingUserMessage) && (
                 <div className="flex justify-end">
                   <div className="max-w-[80%] rounded-2xl rounded-br-md bg-indigo-100 px-4 py-3 text-gray-800">
                     {pendingUserMessage}
                   </div>
                 </div>
               )}
-              {streamingContent && (
+              {/* Synced playback: display text character by character */}
+              {/* Show block only for karaoke mode (when fullText is set), not for manual replay */}
+              {(displayedText || (isPlaying && fullText)) && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-gray-800 shadow-sm">
-                    {streamingContent}
-                    <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-indigo-500" />
+                    <div className="flex items-start gap-2">
+                      <span className="flex-1">
+                        {displayedText || <span className="invisible">.</span>}
+                        {isPlaying && <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-indigo-500" />}
+                      </span>
+                      {/* Invisible placeholder for play button to prevent layout shift */}
+                      <span className="mt-0.5 flex-shrink-0 invisible">🔊</span>
+                    </div>
                   </div>
                 </div>
               )}
-              {isLoading && !streamingContent && (
+              {isLoading && !isPlaying && !displayedText && (
                 <div className="flex justify-start">
                   <div className="rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
                     <div className="flex gap-1">
@@ -230,13 +287,14 @@ export default function TestPage() {
                 type="text"
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSend()}
-                placeholder="Type your message..."
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 transition-colors focus:border-indigo-300 focus:bg-white focus:outline-none"
+                onKeyDown={(e) => e.key === 'Enter' && !isLoading && !isPlaying && handleSend()}
+                placeholder={isPlaying ? 'Wait for response...' : 'Type your message...'}
+                disabled={isPlaying}
+                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 transition-colors focus:border-indigo-300 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
-                disabled={isLoading || !userMessage.trim()}
+                disabled={isLoading || isPlaying || !userMessage.trim()}
                 className="self-stretch rounded-xl bg-indigo-600 px-6 font-medium text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Send

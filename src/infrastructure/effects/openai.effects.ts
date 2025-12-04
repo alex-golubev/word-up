@@ -3,15 +3,11 @@ import type { TaskEither } from 'fp-ts/TaskEither';
 import { tryCatch } from 'fp-ts/TaskEither';
 import { aiError } from '~/domain/errors';
 import type { AppError } from '~/domain/errors';
-import type { ChatMessage, GenerateResponse } from '~/domain/types';
+import type { ChatMessage, GenerateResponse, SpeechVoice, SpeechResponse } from '~/domain/types';
 
 export type OpenAiConfig = {
   readonly apiKey: string;
   readonly model?: string;
-};
-
-export type ChatCompletionStream = {
-  readonly stream: AsyncIterable<string>;
 };
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
@@ -35,31 +31,19 @@ export const createOpenAIEffects = (config: OpenAiConfig) => {
         (error) => aiError('Failed to generate response', error)
       ),
 
-    generateChatCompletionStream: (
-      messages: readonly ChatMessage[],
-      signal?: AbortSignal
-    ): TaskEither<AppError, ChatCompletionStream> =>
+    generateSpeech: (text: string, voice: SpeechVoice = 'shimmer'): TaskEither<AppError, SpeechResponse> =>
       tryCatch(
         async () => {
-          const response = await client.chat.completions.create(
-            {
-              model,
-              messages: messages.map((m) => ({ role: m.role, content: m.content })),
-              stream: true,
-            },
-            { signal }
-          );
-
-          const stream = (async function* () {
-            for await (const chunk of response) {
-              const content = chunk.choices[0]?.delta?.content;
-              if (content) yield content;
-            }
-          })();
-
-          return { stream };
+          const response = await client.audio.speech.create({
+            model: 'tts-1',
+            input: text,
+            voice,
+            response_format: 'mp3',
+          });
+          const buffer = Buffer.from(await response.arrayBuffer());
+          return { audio: buffer.toString('base64'), format: 'mp3' as const };
         },
-        (error) => aiError('Failed to start streaming response', error)
+        (error) => aiError('Failed to generate speech', error)
       ),
   };
 };

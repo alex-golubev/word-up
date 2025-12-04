@@ -28,7 +28,7 @@ export const createAppEnv = (config: AppEnvConfig): AppEnv => {
     getMessagesByConversation: messageEffects.getMessagesByConversation,
     saveMessage: messageEffects.saveMessage,
     generateChatCompletion: openAiEffects.generateChatCompletion,
-    generateChatCompletionStream: openAiEffects.generateChatCompletionStream,
+    generateSpeech: openAiEffects.generateSpeech,
 
     // User
     getUserById: userEffects.getUserById,
