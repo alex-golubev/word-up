@@ -26,9 +26,9 @@ jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   }),
 }));
 
+import { createAppEnv } from '~/infrastructure/env';
 import { authRouter } from '~/presentation/trpc/routers/auth.router';
 import { TEST_UUID, createMockDB, createTestUserRow, createTestRefreshTokenRow } from '~/test/fixtures';
-import { createAppEnv } from '~/infrastructure/env';
 
 const createCaller = (
   db: ReturnType<typeof createMockDB>,

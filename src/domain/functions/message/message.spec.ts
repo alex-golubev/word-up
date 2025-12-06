@@ -1,5 +1,3 @@
-import type { Message } from '~/domain/types';
-import { TEST_CONVERSATION_ID, createTestMessage } from '~/test/fixtures';
 import {
   messageAppend,
   messageCreate,
@@ -7,6 +5,8 @@ import {
   messageFormatForAI,
   messageTakeLast,
 } from '~/domain/functions/message';
+import type { Message } from '~/domain/types';
+import { TEST_CONVERSATION_ID, createTestMessage } from '~/test/fixtures';
 
 describe('messageCreate', () => {
   const defaultParams = {

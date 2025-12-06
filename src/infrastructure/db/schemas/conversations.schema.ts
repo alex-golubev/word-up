@@ -1,4 +1,5 @@
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+
 import { languageEnum, levelEnum, scenarios, users } from '~/infrastructure/db/schemas';
 
 export const conversations = pgTable('conversations', {

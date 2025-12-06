@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { pipe } from 'fp-ts/function';
+
 import { takeRight } from 'fp-ts/Array';
+import { pipe } from 'fp-ts/function';
+
 import type { ConversationId, Message, MessageRole } from '~/domain/types';
 import { makeMessageId, MessageContentSchema } from '~/domain/types';
 

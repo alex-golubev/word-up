@@ -31,8 +31,8 @@ jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   }),
 }));
 
-import { router, protectedProcedure } from '~/presentation/trpc/trpc';
 import { createAppEnv } from '~/infrastructure/env';
+import { router, protectedProcedure } from '~/presentation/trpc/trpc';
 import { createMockDB } from '~/test/fixtures';
 
 describe('trpc', () => {

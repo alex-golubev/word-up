@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
+
 import type { JwtPayload } from '~/domain/types';
 
 const ACCESS_TOKEN_EXPIRY = '15m';

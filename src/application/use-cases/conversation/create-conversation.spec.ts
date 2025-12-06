@@ -1,8 +1,9 @@
 import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
+
 import { createConversationUseCase } from '~/application/use-cases/conversation/create-conversation';
-import { TEST_SCENARIO_ID, TEST_USER_ID, createTestConversation } from '~/test/fixtures';
 import { insertFailed } from '~/domain/types';
+import { TEST_SCENARIO_ID, TEST_USER_ID, createTestConversation } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
 
 describe('createConversationUseCase', () => {

@@ -1,7 +1,8 @@
 import { pipe } from 'fp-ts/function';
+
+import type { AppReader } from '~/application/reader';
 import { conversationCreate } from '~/domain/functions/conversation';
 import type { Conversation, Language, ScenarioId, UserId, UserLevel } from '~/domain/types';
-import type { AppReader } from '~/application/reader';
 
 export type CreateConversationParams = {
   readonly userId: UserId;

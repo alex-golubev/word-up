@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function';
 import { map } from 'fp-ts/TaskEither';
+
 import type { AppReader } from '~/application/reader';
 import type { ChatMessage, Scenario } from '~/domain/types';
 

@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { left, right } from 'fp-ts/TaskEither';
+
 import {
   notFound,
   insertFailed,
@@ -12,8 +13,8 @@ import {
   invalidToken,
   unauthorized,
 } from '~/domain/types';
-import { appErrorToTRPC, runEffect, safeHandler } from '~/presentation/trpc/errors';
 import type { Context } from '~/presentation/trpc/context';
+import { appErrorToTRPC, runEffect, safeHandler } from '~/presentation/trpc/errors';
 import { createMockEnv } from '~/test/mock-env';
 
 describe('appErrorToTRPC', () => {

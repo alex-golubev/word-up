@@ -1,5 +1,6 @@
 import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
+
 import { generateResponseFromHistoryUseCase } from '~/application/use-cases/ai/generate-response-from-history';
 import { aiError } from '~/domain/errors';
 import { createTestScenario } from '~/test/fixtures';

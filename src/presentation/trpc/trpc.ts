@@ -1,10 +1,11 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { isLeft } from 'fp-ts/Either';
+
+import { refreshTokensUseCase } from '~/application/use-cases';
+import { makeUserId } from '~/domain/types';
+import { verifyAccessToken, setAuthCookies, clearAuthCookies, verifyRefreshToken } from '~/infrastructure/auth';
 import type { Context } from '~/presentation/trpc/context';
 import { transformer } from '~/utils/transformer';
-import { verifyAccessToken, setAuthCookies, clearAuthCookies, verifyRefreshToken } from '~/infrastructure/auth';
-import { makeUserId } from '~/domain/types';
-import { refreshTokensUseCase } from '~/application/use-cases';
 
 const t = initTRPC.context<Context>().create({
   transformer,

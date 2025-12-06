@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+
 import { conversations, messageRoleEnum } from '~/infrastructure/db/schemas';
 
 export const messages = pgTable('messages', {

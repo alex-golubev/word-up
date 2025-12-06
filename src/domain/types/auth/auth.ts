@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import type { UserId } from '~/domain/types/common';
 
 export type AuthTokens = {

@@ -1,6 +1,7 @@
-import { pipe } from 'fp-ts/function';
 import { sequenceS } from 'fp-ts/Apply';
+import { pipe } from 'fp-ts/function';
 import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
+
 import type { AppReader } from '~/application/reader';
 import type { AuthTokens, Language } from '~/domain/types';
 import { dbError, emailAlreadyExists } from '~/domain/types';

@@ -1,12 +1,14 @@
-import type { TaskEither } from 'fp-ts/TaskEither';
-import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
-import { pipe } from 'fp-ts/function';
 import { eq } from 'drizzle-orm';
-import { makeUserId } from '~/domain/types';
+import { pipe } from 'fp-ts/function';
+import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
+
 import type { AppError, Language, User, UserId, UserCreateParams } from '~/domain/types';
+import { makeUserId } from '~/domain/types';
 import { dbError, insertFailed, notFound } from '~/domain/types';
-import { users } from '~/infrastructure/db/schemas';
 import type { DBClient } from '~/infrastructure/db/client';
+import { users } from '~/infrastructure/db/schemas';
+
+import type { TaskEither } from 'fp-ts/TaskEither';
 
 type UserRow = typeof users.$inferSelect;
 

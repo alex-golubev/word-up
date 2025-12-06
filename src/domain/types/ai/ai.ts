@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { MessageContentSchema, MessageRoleSchema } from '~/domain/types/common';
+
 import type { Message, Scenario, UserLevel } from '~/domain/types';
+import { MessageContentSchema, MessageRoleSchema } from '~/domain/types/common';
 
 export type ChatRole = 'system' | 'user' | 'assistant';
 

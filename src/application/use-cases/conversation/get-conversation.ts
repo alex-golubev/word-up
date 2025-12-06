@@ -1,8 +1,9 @@
-import { ApplyPar, map } from 'fp-ts/TaskEither';
-import { pipe } from 'fp-ts/function';
 import { sequenceS } from 'fp-ts/Apply';
-import type { Conversation, ConversationId, Message } from '~/domain/types';
+import { pipe } from 'fp-ts/function';
+import { ApplyPar, map } from 'fp-ts/TaskEither';
+
 import type { AppReader } from '~/application/reader';
+import type { Conversation, ConversationId, Message } from '~/domain/types';
 
 export type ConversationWithMessages = Conversation & { readonly messages: readonly Message[] };
 

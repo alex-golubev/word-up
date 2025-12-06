@@ -1,7 +1,8 @@
 import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
-import { dbError } from '~/domain/types';
+
 import { logoutUseCase } from '~/application/use-cases/auth/logout';
+import { dbError } from '~/domain/types';
 import { createMockEnv } from '~/test/mock-env';
 
 describe('logoutUseCase', () => {

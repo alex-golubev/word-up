@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { LanguageSchema, ScenarioIdSchema, UserLevelSchema } from '~/domain/types/common';
 
 export const ScenarioSchema = z.object({

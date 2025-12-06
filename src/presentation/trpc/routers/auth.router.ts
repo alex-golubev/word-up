@@ -1,11 +1,12 @@
-import { z } from 'zod';
 import { pipe } from 'fp-ts/function';
 import { map } from 'fp-ts/TaskEither';
-import { protectedProcedure, publicProcedure, router } from '~/presentation/trpc/trpc';
-import { EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
+import { z } from 'zod';
+
 import { getCurrentUserUseCase, loginUseCase, logoutUseCase, registerUseCase } from '~/application/use-cases';
-import { safeHandler } from '~/presentation/trpc/errors';
+import { EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
 import { setAuthCookies, clearAuthCookies } from '~/infrastructure/auth';
+import { safeHandler } from '~/presentation/trpc/errors';
+import { protectedProcedure, publicProcedure, router } from '~/presentation/trpc/trpc';
 
 const RegisterInputSchema = z.object({
   email: EmailSchema,

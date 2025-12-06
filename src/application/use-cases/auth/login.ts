@@ -1,10 +1,11 @@
-import { pipe } from 'fp-ts/function';
 import { sequenceS } from 'fp-ts/Apply';
+import { pipe } from 'fp-ts/function';
 import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
-import { dbError, invalidCredentials } from '~/domain/types';
-import { createAccessToken, createRefreshToken, getRefreshTokenExpiry, verifyPassword } from '~/infrastructure/auth';
-import type { AuthTokens } from '~/domain/types';
+
 import type { AppReader } from '~/application/reader';
+import { dbError, invalidCredentials } from '~/domain/types';
+import type { AuthTokens } from '~/domain/types';
+import { createAccessToken, createRefreshToken, getRefreshTokenExpiry, verifyPassword } from '~/infrastructure/auth';
 
 export type LoginParams = {
   readonly email: string;

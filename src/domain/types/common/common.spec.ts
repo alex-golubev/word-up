@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+
 import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types/common';
 import { INVALID_UUIDS } from '~/test/fixtures';
 

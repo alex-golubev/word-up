@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '~/presentation/trpc/trpc';
+
+import {
+  createConversationUseCase,
+  generateResponseFromHistoryUseCase,
+  generateSpeechUseCase,
+  getConversationUseCase,
+  saveMessagesUseCase,
+} from '~/application/use-cases';
 import {
   ChatMessageSchema,
   ConversationIdSchema,
@@ -12,14 +19,8 @@ import {
   UserIdSchema,
   UserLevelSchema,
 } from '~/domain/types';
-import {
-  createConversationUseCase,
-  generateResponseFromHistoryUseCase,
-  generateSpeechUseCase,
-  getConversationUseCase,
-  saveMessagesUseCase,
-} from '~/application/use-cases';
 import { safeHandler } from '~/presentation/trpc/errors';
+import { publicProcedure, router } from '~/presentation/trpc/trpc';
 
 const CreateConversationInputSchema = z.object({
   userId: UserIdSchema,
