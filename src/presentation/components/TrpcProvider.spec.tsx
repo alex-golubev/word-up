@@ -1,3 +1,4 @@
+/* eslint-disable import/order */
 import { render, screen } from '@testing-library/react';
 
 jest.mock('~/utils/transformer', () => ({
@@ -8,16 +9,18 @@ jest.mock('@trpc/client', () => ({
   httpBatchStreamLink: jest.fn(() => ({})),
 }));
 
-jest.mock('~/presentation/hooks/trpc', () => ({
+jest.mock('~/presentation/hooks', () => ({
   trpc: {
     createClient: jest.fn(() => ({})),
     Provider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   },
 }));
 
-import { TrpcProvider } from './TrpcProvider';
-import { trpc } from '~/presentation/hooks/trpc';
 import { httpBatchStreamLink } from '@trpc/client';
+
+import { trpc } from '~/presentation/hooks';
+
+import { TrpcProvider } from './TrpcProvider';
 
 describe('TrpcProvider', () => {
   it('should render children', () => {

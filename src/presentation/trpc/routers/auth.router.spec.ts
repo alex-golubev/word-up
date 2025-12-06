@@ -20,7 +20,7 @@ jest.mock('~/infrastructure/auth', () => ({
   getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date()),
 }));
 
-jest.mock('~/infrastructure/effects/openai.effects', () => ({
+jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn(),
   }),

@@ -25,7 +25,7 @@ jest.mock('~/application/use-cases', () => ({
   refreshTokensUseCase: (...args: unknown[]) => mockRefreshTokensUseCase(...args),
 }));
 
-jest.mock('~/infrastructure/effects/openai.effects', () => ({
+jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn(),
   }),

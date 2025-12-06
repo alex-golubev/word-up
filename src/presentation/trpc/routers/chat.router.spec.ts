@@ -8,7 +8,7 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
-jest.mock('~/infrastructure/effects/openai.effects', () => ({
+jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn().mockReturnValue(right({ content: 'mocked response' })),
   }),

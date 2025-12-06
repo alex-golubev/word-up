@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { trpc } from '~/presentation/hooks/trpc';
-import { useSyncedPlayback } from '~/presentation/hooks/useSyncedPlayback';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { trpc, useSyncedPlayback } from '~/presentation/hooks';
+
 import type { Conversation } from '~/domain/types';
 
 const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
