@@ -1,10 +1,10 @@
 import { pipe } from 'fp-ts/function';
-import { map } from 'fp-ts/TaskEither';
+import { chainFirst, map, tryCatch } from 'fp-ts/TaskEither';
 import { z } from 'zod';
 
 import { getCurrentUserUseCase, loginUseCase, logoutUseCase, registerUseCase } from '~/application/use-cases';
-import { EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
-import { setAuthCookies, clearAuthCookies } from '~/infrastructure/auth';
+import { dbError, EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
+import { clearAuthCookies, setAuthCookies } from '~/infrastructure/auth';
 import { safeHandler } from '~/presentation/trpc/errors';
 import { protectedProcedure, publicProcedure, router } from '~/presentation/trpc/trpc';
 
@@ -25,10 +25,8 @@ export const authRouter = router({
     safeHandler(({ ctx, input }) =>
       pipe(
         registerUseCase(input)(ctx.env),
-        map(async (tokens) => {
-          await setAuthCookies(tokens.accessToken, tokens.refreshToken);
-          return { success: true };
-        })
+        chainFirst((tokens) => tryCatch(() => setAuthCookies(tokens.accessToken, tokens.refreshToken), dbError)),
+        map(() => ({ success: true }))
       )
     )
   ),
@@ -37,10 +35,8 @@ export const authRouter = router({
     safeHandler(({ ctx, input }) =>
       pipe(
         loginUseCase(input)(ctx.env),
-        map(async (tokens) => {
-          await setAuthCookies(tokens.accessToken, tokens.refreshToken);
-          return { success: true };
-        })
+        chainFirst((tokens) => tryCatch(() => setAuthCookies(tokens.accessToken, tokens.refreshToken), dbError)),
+        map(() => ({ success: true }))
       )
     )
   ),
@@ -49,10 +45,8 @@ export const authRouter = router({
     safeHandler(({ ctx }) =>
       pipe(
         logoutUseCase(ctx.refreshToken!)(ctx.env),
-        map(async () => {
-          await clearAuthCookies();
-          return { success: true };
-        })
+        chainFirst(() => tryCatch(() => clearAuthCookies(), dbError)),
+        map(() => ({ success: true }))
       )
     )
   ),

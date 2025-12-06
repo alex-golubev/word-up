@@ -2,10 +2,11 @@ import { TRPCError } from '@trpc/server';
 import { isLeft } from 'fp-ts/Either';
 
 import { getErrorMessage } from '~/domain/types';
-import type { AppError } from '~/domain/types';
-import type { Context } from '~/presentation/trpc/context';
 
 import type { TaskEither } from 'fp-ts/TaskEither';
+
+import type { AppError } from '~/domain/types';
+import type { Context } from '~/presentation/trpc/context';
 
 export const appErrorToTRPC = (error: AppError): TRPCError => {
   switch (error._tag) {

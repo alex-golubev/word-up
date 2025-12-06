@@ -5,7 +5,7 @@ import {
   conversationMessages,
   conversationMessagesCount,
 } from '~/domain/functions/conversation';
-import { TEST_USER_ID, TEST_SCENARIO_ID, createTestConversation, createTestMessage } from '~/test/fixtures';
+import { createTestConversation, createTestMessage, TEST_SCENARIO_ID, TEST_USER_ID } from '~/test/fixtures';
 
 describe('conversationCreate', () => {
   const defaultParams = {

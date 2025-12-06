@@ -1,11 +1,12 @@
-import { sequenceS } from 'fp-ts/Apply';
 import { pipe } from 'fp-ts/function';
-import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
+import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
+
+import { createAndPersistAuthTokens } from '~/application/use-cases/auth/create-auth-tokens';
+import { dbError, invalidCredentials } from '~/domain/types';
+import { verifyPassword } from '~/infrastructure/auth';
 
 import type { AppReader } from '~/application/reader';
-import { dbError, invalidCredentials } from '~/domain/types';
 import type { AuthTokens } from '~/domain/types';
-import { createAccessToken, createRefreshToken, getRefreshTokenExpiry, verifyPassword } from '~/infrastructure/auth';
 
 export type LoginParams = {
   readonly email: string;
@@ -31,23 +32,6 @@ export const loginUseCase =
         )
       ),
 
-      // 3. Create JWT tokens
-      chain((user) => {
-        const payload = { userId: user.id, email: user.email };
-        return pipe(
-          sequenceS(ApplyPar)({
-            accessToken: tryCatch(() => createAccessToken(payload), dbError),
-            refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
-          }),
-          map((tokens) => ({ user, ...tokens }))
-        );
-      }),
-
-      // 4. Save a refresh token to DB
-      chain(({ user, accessToken, refreshToken }) =>
-        pipe(
-          env.saveRefreshToken(user.id, refreshToken, getRefreshTokenExpiry()),
-          map(() => ({ accessToken, refreshToken }))
-        )
-      )
+      // 3. Create JWT tokens and save refresh token
+      chain((user) => createAndPersistAuthTokens(env, user.id, user.email))
     );

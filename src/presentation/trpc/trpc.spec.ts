@@ -32,7 +32,7 @@ jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
 }));
 
 import { createAppEnv } from '~/infrastructure/env';
-import { router, protectedProcedure } from '~/presentation/trpc/trpc';
+import { protectedProcedure, router } from '~/presentation/trpc/trpc';
 import { createMockDB } from '~/test/fixtures';
 
 describe('trpc', () => {

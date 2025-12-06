@@ -1,15 +1,16 @@
 import { isLeft, isRight } from 'fp-ts/Either';
 
-import type { DBClient } from '~/infrastructure/db/client';
 import { createConversationEffects } from '~/infrastructure/effects/conversation/conversation.effects';
 import {
-  TEST_USER_ID,
-  TEST_SCENARIO_ID,
-  TEST_CONVERSATION_ID,
+  createMockDB,
   createTestConversation,
   createTestConversationRow,
-  createMockDB,
+  TEST_CONVERSATION_ID,
+  TEST_SCENARIO_ID,
+  TEST_USER_ID,
 } from '~/test/fixtures';
+
+import type { DBClient } from '~/infrastructure/db/client';
 
 describe('createConversationEffects', () => {
   describe('saveConversation', () => {

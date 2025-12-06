@@ -2,10 +2,11 @@ import { tryCatch } from 'fp-ts/TaskEither';
 import OpenAI from 'openai';
 
 import { aiError } from '~/domain/errors';
-import type { AppError } from '~/domain/errors';
-import type { ChatMessage, GenerateResponse, SpeechVoice, SpeechResponse } from '~/domain/types';
 
 import type { TaskEither } from 'fp-ts/TaskEither';
+
+import type { AppError } from '~/domain/errors';
+import type { ChatMessage, GenerateResponse, SpeechResponse, SpeechVoice } from '~/domain/types';
 
 export type OpenAiConfig = {
   readonly apiKey: string;

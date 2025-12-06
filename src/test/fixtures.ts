@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types';
+
 import type { Conversation, Message, Scenario } from '~/domain/types';
 
 export const TEST_UUID = {

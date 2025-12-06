@@ -1,14 +1,18 @@
 import { eq } from 'drizzle-orm';
-import { pipe } from 'fp-ts/function';
-import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
 
-import type { AppError, Conversation, ConversationId } from '~/domain/types';
 import { makeConversationId, makeScenarioId, makeUserId } from '~/domain/types';
-import { dbError, insertFailed, notFound } from '~/domain/types';
-import type { DBClient } from '~/infrastructure/db/client';
+import { insertOne, queryOne } from '~/infrastructure/db/query-helpers';
 import { conversations } from '~/infrastructure/db/schemas';
 
 import type { TaskEither } from 'fp-ts/TaskEither';
+
+import type { AppError, Conversation, ConversationId } from '~/domain/types';
+import type { DBClient } from '~/infrastructure/db/client';
+
+export interface ConversationEffects {
+  readonly saveConversation: (conversation: Conversation) => TaskEither<AppError, Conversation>;
+  readonly getConversation: (conversationId: ConversationId) => TaskEither<AppError, Conversation>;
+}
 
 type ConversationRow = typeof conversations.$inferSelect;
 
@@ -23,26 +27,15 @@ const mapRowToConversation = (row: ConversationRow): Conversation => ({
   updatedAt: row.updatedAt,
 });
 
-export const createConversationEffects = (db: DBClient) => ({
-  saveConversation: (conversation: Conversation): TaskEither<AppError, Conversation> =>
-    pipe(
-      tryCatch(
-        () => db.insert(conversations).values(conversation).returning(),
-        (error) => dbError(error)
-      ),
-      chain(([inserted]) => (inserted ? right(mapRowToConversation(inserted)) : left(insertFailed('Conversation'))))
-    ),
+export const createConversationEffects = (db: DBClient): ConversationEffects => ({
+  saveConversation: (conversation) =>
+    insertOne(() => db.insert(conversations).values(conversation).returning(), mapRowToConversation, 'Conversation'),
 
-  getConversation: (conversationId: ConversationId): TaskEither<AppError, Conversation> =>
-    pipe(
-      tryCatch(
-        () => db.select().from(conversations).where(eq(conversations.id, conversationId)),
-        (error) => dbError(error)
-      ),
-      chain(([selected]) =>
-        selected ? right(mapRowToConversation(selected)) : left(notFound('Conversation', conversationId))
-      )
+  getConversation: (conversationId) =>
+    queryOne(
+      () => db.select().from(conversations).where(eq(conversations.id, conversationId)),
+      mapRowToConversation,
+      'Conversation',
+      conversationId
     ),
 });
-
-export type ConversationEffects = ReturnType<typeof createConversationEffects>;

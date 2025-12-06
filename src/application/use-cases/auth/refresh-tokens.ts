@@ -2,8 +2,6 @@ import { sequenceS } from 'fp-ts/Apply';
 import { pipe } from 'fp-ts/function';
 import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
 
-import type { AppReader } from '~/application/reader';
-import type { AuthTokens } from '~/domain/types';
 import { dbError, invalidToken, tokenExpired } from '~/domain/types';
 import {
   createAccessToken,
@@ -12,6 +10,9 @@ import {
   REFRESH_TOKEN_GRACE_PERIOD_MS,
   verifyRefreshToken,
 } from '~/infrastructure/auth';
+
+import type { AppReader } from '~/application/reader';
+import type { AuthTokens } from '~/domain/types';
 
 export const refreshTokensUseCase =
   (oldRefreshToken: string): AppReader<AuthTokens> =>

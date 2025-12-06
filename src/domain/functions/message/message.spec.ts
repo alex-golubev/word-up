@@ -5,8 +5,9 @@ import {
   messageFormatForAI,
   messageTakeLast,
 } from '~/domain/functions/message';
+import { createTestMessage, TEST_CONVERSATION_ID } from '~/test/fixtures';
+
 import type { Message } from '~/domain/types';
-import { TEST_CONVERSATION_ID, createTestMessage } from '~/test/fixtures';
 
 describe('messageCreate', () => {
   const defaultParams = {

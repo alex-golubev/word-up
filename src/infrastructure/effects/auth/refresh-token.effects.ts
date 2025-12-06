@@ -1,14 +1,25 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import { pipe } from 'fp-ts/function';
-import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
+import { tryCatch } from 'fp-ts/TaskEither';
 
-import type { AppError, RefreshToken, UserId } from '~/domain/types';
-import { makeUserId } from '~/domain/types';
-import { dbError, insertFailed } from '~/domain/types';
-import type { DBClient } from '~/infrastructure/db/client';
+import { dbError, makeUserId } from '~/domain/types';
+import { deleteMany, insertOne, queryOneOptional } from '~/infrastructure/db/query-helpers';
 import { refreshTokens } from '~/infrastructure/db/schemas';
 
 import type { TaskEither } from 'fp-ts/TaskEither';
+
+import type { AppError, RefreshToken, UserId } from '~/domain/types';
+import type { DBClient } from '~/infrastructure/db/client';
+
+export interface RefreshTokenEffects {
+  readonly saveRefreshToken: (userId: UserId, token: string, expiresAt: Date) => TaskEither<AppError, RefreshToken>;
+  readonly getRefreshToken: (token: string) => TaskEither<AppError, RefreshToken | null>;
+  readonly deleteRefreshToken: (token: string) => TaskEither<AppError, void>;
+  readonly deleteAllUserTokens: (userId: UserId) => TaskEither<AppError, void>;
+  readonly tryMarkTokenAsUsed: (
+    token: string,
+    replacementToken: string
+  ) => TaskEither<AppError, { marked: boolean; record: RefreshToken }>;
+}
 
 type RefreshTokenRow = typeof refreshTokens.$inferSelect;
 
@@ -22,42 +33,22 @@ const mapRowToRefreshToken = (row: RefreshTokenRow): RefreshToken => ({
   replacementToken: row.replacementToken,
 });
 
-export const createRefreshTokenEffects = (db: DBClient) => ({
+export const createRefreshTokenEffects = (db: DBClient): RefreshTokenEffects => ({
   saveRefreshToken: (userId: UserId, token: string, expiresAt: Date): TaskEither<AppError, RefreshToken> =>
-    pipe(
-      tryCatch(
-        () => db.insert(refreshTokens).values({ userId, token, expiresAt }).returning(),
-        (error) => dbError(error)
-      ),
-      chain(([row]) => (row ? right(mapRowToRefreshToken(row)) : left(insertFailed('RefreshToken'))))
+    insertOne(
+      () => db.insert(refreshTokens).values({ userId, token, expiresAt }).returning(),
+      mapRowToRefreshToken,
+      'RefreshToken'
     ),
 
   getRefreshToken: (token: string): TaskEither<AppError, RefreshToken | null> =>
-    pipe(
-      tryCatch(
-        () => db.select().from(refreshTokens).where(eq(refreshTokens.token, token)),
-        (error) => dbError(error)
-      ),
-      chain(([row]) => right(row ? mapRowToRefreshToken(row) : null))
-    ),
+    queryOneOptional(() => db.select().from(refreshTokens).where(eq(refreshTokens.token, token)), mapRowToRefreshToken),
 
   deleteRefreshToken: (token: string): TaskEither<AppError, void> =>
-    pipe(
-      tryCatch(
-        () => db.delete(refreshTokens).where(eq(refreshTokens.token, token)),
-        (error) => dbError(error)
-      ),
-      chain(() => right(undefined))
-    ),
+    deleteMany(() => db.delete(refreshTokens).where(eq(refreshTokens.token, token))),
 
   deleteAllUserTokens: (userId: UserId): TaskEither<AppError, void> =>
-    pipe(
-      tryCatch(
-        () => db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)),
-        (error) => dbError(error)
-      ),
-      chain(() => right(undefined))
-    ),
+    deleteMany(() => db.delete(refreshTokens).where(eq(refreshTokens.userId, userId))),
 
   tryMarkTokenAsUsed: (
     token: string,
@@ -88,5 +79,3 @@ export const createRefreshTokenEffects = (db: DBClient) => ({
       (error) => dbError(error)
     ),
 });
-
-export type RefreshTokenEffects = ReturnType<typeof createRefreshTokenEffects>;

@@ -3,9 +3,10 @@ import { isLeft } from 'fp-ts/Either';
 
 import { refreshTokensUseCase } from '~/application/use-cases';
 import { makeUserId } from '~/domain/types';
-import { verifyAccessToken, setAuthCookies, clearAuthCookies, verifyRefreshToken } from '~/infrastructure/auth';
-import type { Context } from '~/presentation/trpc/context';
+import { clearAuthCookies, setAuthCookies, verifyAccessToken, verifyRefreshToken } from '~/infrastructure/auth';
 import { transformer } from '~/utils/transformer';
+
+import type { Context } from '~/presentation/trpc/context';
 
 const t = initTRPC.context<Context>().create({
   transformer,

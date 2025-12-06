@@ -2,10 +2,11 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { registerUseCase } from '~/application/use-cases/auth/register';
-import type { User } from '~/domain/types';
 import { dbError, emailAlreadyExists, makeUserId } from '~/domain/types';
-import { TEST_UUID, TEST_DATE } from '~/test/fixtures';
+import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
+
+import type { User } from '~/domain/types';
 
 jest.mock('~/infrastructure/auth', () => ({
   hashPassword: jest.fn().mockResolvedValue('hashed-password'),

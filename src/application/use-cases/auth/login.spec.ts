@@ -2,10 +2,11 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { loginUseCase } from '~/application/use-cases/auth/login';
-import type { User } from '~/domain/types';
 import { dbError, makeUserId } from '~/domain/types';
-import { TEST_UUID, TEST_DATE } from '~/test/fixtures';
+import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
+
+import type { User } from '~/domain/types';
 
 const mockVerifyPassword = jest.fn();
 

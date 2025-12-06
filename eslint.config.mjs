@@ -14,6 +14,12 @@ const eslintConfig = defineConfig([
       prettier: prettierPlugin,
       import: importPlugin,
     },
+    settings: {
+      'import/resolver': {
+        typescript: true,
+        node: true,
+      },
+    },
     rules: {
       'prettier/prettier': 'error',
       '@typescript-eslint/consistent-type-imports': [
@@ -39,9 +45,26 @@ const eslintConfig = defineConfig([
             order: 'asc',
             caseInsensitive: true,
           },
+          sortTypesGroup: true,
         },
       ],
       'import/newline-after-import': 'error',
+      'sort-imports': [
+        'error',
+        {
+          ignoreCase: true,
+          ignoreDeclarationSort: true, // import/order handles this
+          ignoreMemberSort: false,
+          allowSeparatedGroups: true,
+        },
+      ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.

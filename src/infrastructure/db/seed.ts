@@ -1,5 +1,5 @@
 import { createDBClient } from './client';
-import { users, scenarios } from './schemas';
+import { scenarios, users } from './schemas';
 
 const db = createDBClient();
 

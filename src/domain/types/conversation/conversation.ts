@@ -1,4 +1,4 @@
-import type { ConversationId, Language, ScenarioId, UserId, UserLevel, Message } from '~/domain/types';
+import type { ConversationId, Language, Message, ScenarioId, UserId, UserLevel } from '~/domain/types';
 
 export type Conversation = {
   readonly id: ConversationId;

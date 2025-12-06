@@ -2,10 +2,11 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { refreshTokensUseCase } from '~/application/use-cases/auth/refresh-tokens';
-import type { RefreshToken } from '~/domain/types';
 import { dbError, makeUserId } from '~/domain/types';
-import { TEST_UUID, TEST_DATE } from '~/test/fixtures';
+import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
+
+import type { RefreshToken } from '~/domain/types';
 
 const mockVerifyRefreshToken = jest.fn();
 

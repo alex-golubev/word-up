@@ -1,14 +1,18 @@
 import { eq } from 'drizzle-orm';
-import { pipe } from 'fp-ts/function';
-import { chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
 
-import type { AppError, ConversationId, Message } from '~/domain/types';
 import { makeConversationId, makeMessageId } from '~/domain/types';
-import { dbError, insertFailed } from '~/domain/types';
-import type { DBClient } from '~/infrastructure/db/client';
+import { insertOne, queryMany } from '~/infrastructure/db/query-helpers';
 import { messages } from '~/infrastructure/db/schemas';
 
 import type { TaskEither } from 'fp-ts/TaskEither';
+
+import type { AppError, ConversationId, Message } from '~/domain/types';
+import type { DBClient } from '~/infrastructure/db/client';
+
+export interface MessageEffects {
+  readonly saveMessage: (message: Message) => TaskEither<AppError, Message>;
+  readonly getMessagesByConversation: (id: ConversationId) => TaskEither<AppError, readonly Message[]>;
+}
 
 type MessageRow = typeof messages.$inferSelect;
 
@@ -20,24 +24,13 @@ const mapRowToMessage = (row: MessageRow): Message => ({
   createdAt: row.createdAt,
 });
 
-export const createMessageEffects = (db: DBClient) => ({
-  saveMessage: (message: Message): TaskEither<AppError, Message> =>
-    pipe(
-      tryCatch(
-        () => db.insert(messages).values(message).returning(),
-        (error) => dbError(error)
-      ),
-      chain(([inserted]) => (inserted ? right(mapRowToMessage(inserted)) : left(insertFailed('Message'))))
-    ),
+export const createMessageEffects = (db: DBClient): MessageEffects => ({
+  saveMessage: (message) =>
+    insertOne(() => db.insert(messages).values(message).returning(), mapRowToMessage, 'Message'),
 
-  getMessagesByConversation: (id: ConversationId): TaskEither<AppError, readonly Message[]> =>
-    pipe(
-      tryCatch(
-        () => db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(messages.createdAt),
-        (error) => dbError(error)
-      ),
-      map((rows) => rows.map(mapRowToMessage))
+  getMessagesByConversation: (id) =>
+    queryMany(
+      () => db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(messages.createdAt),
+      mapRowToMessage
     ),
 });
-
-export type MessageEffects = ReturnType<typeof createMessageEffects>;

@@ -2,10 +2,11 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { getCurrentUserUseCase } from '~/application/use-cases/auth/get-current-user';
-import type { User } from '~/domain/types';
 import { makeUserId, notFound } from '~/domain/types';
-import { TEST_UUID, TEST_DATE } from '~/test/fixtures';
+import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
+
+import type { User } from '~/domain/types';
 
 const createTestUser = (overrides?: Partial<User>): User => ({
   id: makeUserId(TEST_UUID.user),

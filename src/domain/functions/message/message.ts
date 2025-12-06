@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { takeRight } from 'fp-ts/Array';
 import { pipe } from 'fp-ts/function';
 
-import type { ConversationId, Message, MessageRole } from '~/domain/types';
 import { makeMessageId, MessageContentSchema } from '~/domain/types';
+
+import type { ConversationId, Message, MessageRole } from '~/domain/types';
 
 type MessageCreateParams = {
   readonly conversationId: ConversationId;

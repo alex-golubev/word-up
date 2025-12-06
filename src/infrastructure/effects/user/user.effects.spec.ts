@@ -1,8 +1,9 @@
 import { isLeft, isRight } from 'fp-ts/Either';
 
-import type { DBClient } from '~/infrastructure/db/client';
 import { createUserEffects } from '~/infrastructure/effects/user/user.effects';
-import { TEST_USER_ID, createTestUserRow, createMockDB } from '~/test/fixtures';
+import { createMockDB, createTestUserRow, TEST_USER_ID } from '~/test/fixtures';
+
+import type { DBClient } from '~/infrastructure/db/client';
 
 describe('createUserEffects', () => {
   describe('getUserById', () => {

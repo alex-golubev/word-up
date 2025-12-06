@@ -3,7 +3,7 @@ import { left, right } from 'fp-ts/TaskEither';
 
 import { createConversationUseCase } from '~/application/use-cases/conversation/create-conversation';
 import { insertFailed } from '~/domain/types';
-import { TEST_SCENARIO_ID, TEST_USER_ID, createTestConversation } from '~/test/fixtures';
+import { createTestConversation, TEST_SCENARIO_ID, TEST_USER_ID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
 
 describe('createConversationUseCase', () => {

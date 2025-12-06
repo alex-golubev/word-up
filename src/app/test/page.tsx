@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { Conversation } from '~/domain/types';
 import { trpc, useSyncedPlayback } from '~/presentation/hooks';
+
+import type { Conversation } from '~/domain/types';
 
 const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
 
