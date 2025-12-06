@@ -1,3 +1,5 @@
+import { isRight } from 'fp-ts/Either';
+
 import {
   createAccessToken,
   createRefreshToken,
@@ -13,38 +15,50 @@ describe('jwt', () => {
   describe('createAccessToken', () => {
     it('should create an access token', async () => {
       const payload = { userId: 'test-user-id', email: 'test@example.com' };
-      const token = await createAccessToken(payload);
+      const result = await createAccessToken(payload)();
 
-      expect(typeof token).toBe('string');
-      expect(token).toBe('mocked-token');
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        expect(typeof result.right).toBe('string');
+        expect(result.right).toBe('mocked-token');
+      }
     });
   });
 
   describe('createRefreshToken', () => {
     it('should create a refresh token', async () => {
       const payload = { userId: 'test-user-id', email: 'test@example.com' };
-      const token = await createRefreshToken(payload);
+      const result = await createRefreshToken(payload)();
 
-      expect(typeof token).toBe('string');
-      expect(token).toBe('mocked-token');
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        expect(typeof result.right).toBe('string');
+        expect(result.right).toBe('mocked-token');
+      }
     });
   });
 
   describe('verifyAccessToken', () => {
     it('should verify access token and return payload', async () => {
-      const payload = await verifyAccessToken('some-token');
+      const result = await verifyAccessToken('some-token')();
 
-      expect(payload.userId).toBe('test-user-id');
-      expect(payload.email).toBe('test@example.com');
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        expect(result.right.userId).toBe('test-user-id');
+        expect(result.right.email).toBe('test@example.com');
+      }
     });
   });
 
   describe('verifyRefreshToken', () => {
     it('should verify refresh token and return payload', async () => {
-      const payload = await verifyRefreshToken('some-token');
+      const result = await verifyRefreshToken('some-token')();
 
-      expect(payload.userId).toBe('test-user-id');
-      expect(payload.email).toBe('test@example.com');
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        expect(result.right.userId).toBe('test-user-id');
+        expect(result.right.email).toBe('test@example.com');
+      }
     });
   });
 

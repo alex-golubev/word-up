@@ -2,7 +2,7 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { refreshTokensUseCase } from '~/application/use-cases/auth/refresh-tokens';
-import { dbError, makeUserId } from '~/domain/types';
+import { dbError, unsafeMakeUserId } from '~/domain/types';
 import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
 
@@ -10,17 +10,20 @@ import type { RefreshToken } from '~/domain/types';
 
 const mockVerifyRefreshToken = jest.fn();
 
-jest.mock('~/infrastructure/auth', () => ({
-  verifyRefreshToken: (...args: unknown[]) => mockVerifyRefreshToken(...args),
-  createAccessToken: jest.fn().mockResolvedValue('new-access-token'),
-  createRefreshToken: jest.fn().mockResolvedValue('new-refresh-token'),
-  getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date('2024-01-08')),
-  REFRESH_TOKEN_GRACE_PERIOD_MS: 5000,
-}));
+jest.mock('~/infrastructure/auth', () => {
+  const { right } = jest.requireActual('fp-ts/TaskEither');
+  return {
+    verifyRefreshToken: (...args: unknown[]) => mockVerifyRefreshToken(...args),
+    createAccessToken: jest.fn().mockReturnValue(right('new-access-token')),
+    createRefreshToken: jest.fn().mockReturnValue(right('new-refresh-token')),
+    getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date('2024-01-08')),
+    REFRESH_TOKEN_GRACE_PERIOD_MS: 5000,
+  };
+});
 
 const createTestRefreshToken = (overrides?: Partial<RefreshToken>): RefreshToken => ({
   id: 'token-id',
-  userId: makeUserId(TEST_UUID.user),
+  userId: unsafeMakeUserId(TEST_UUID.user),
   token: 'old-refresh-token',
   expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
   createdAt: TEST_DATE,
@@ -33,8 +36,10 @@ describe('refreshTokensUseCase', () => {
   const oldToken = 'old-refresh-token';
 
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { right } = require('fp-ts/TaskEither');
     mockVerifyRefreshToken.mockReset();
-    mockVerifyRefreshToken.mockResolvedValue({ userId: TEST_UUID.user, email: 'test@example.com' });
+    mockVerifyRefreshToken.mockReturnValue(right({ userId: TEST_UUID.user, email: 'test@example.com' }));
   });
 
   it('should refresh tokens successfully when we are first', async () => {
@@ -86,8 +91,10 @@ describe('refreshTokensUseCase', () => {
   });
 
   it('should return InvalidToken when JWT verification fails', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { left } = require('fp-ts/TaskEither');
     const tokenRecord = createTestRefreshToken();
-    mockVerifyRefreshToken.mockRejectedValue(new Error('Invalid signature'));
+    mockVerifyRefreshToken.mockReturnValue(left({ _tag: 'InvalidToken' }));
 
     const env = createMockEnv({
       getRefreshToken: jest.fn().mockReturnValue(right(tokenRecord)),
@@ -150,7 +157,7 @@ describe('refreshTokensUseCase', () => {
     it('should return replacement tokens within grace period', async () => {
       const tokenRecord = createTestRefreshToken();
       const usedRecord = createTestRefreshToken({
-        usedAt: new Date(Date.now() - 2000), // used 2 seconds ago (within 5s grace)
+        usedAt: new Date(Date.now() - 2000), // used 2 seconds ago (within 5 s grace)
         replacementToken: 'existing-replacement-token',
       });
 
@@ -171,7 +178,7 @@ describe('refreshTokensUseCase', () => {
     it('should return TokenExpired when grace period has passed', async () => {
       const tokenRecord = createTestRefreshToken();
       const usedRecord = createTestRefreshToken({
-        usedAt: new Date(Date.now() - 10000), // used 10 seconds ago (outside 5s grace)
+        usedAt: new Date(Date.now() - 10000), // used 10 seconds ago (outside 5 s graces)
         replacementToken: 'existing-replacement-token',
       });
 

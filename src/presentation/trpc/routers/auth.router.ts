@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/function';
-import { chainFirst, map, tryCatch } from 'fp-ts/TaskEither';
+import { chainFirst, map } from 'fp-ts/TaskEither';
 import { z } from 'zod';
 
 import { getCurrentUserUseCase, loginUseCase, logoutUseCase, registerUseCase } from '~/application/use-cases';
-import { dbError, EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
+import { EmailSchema, LanguageSchema, NameSchema, PasswordSchema } from '~/domain/types';
 import { clearAuthCookies, setAuthCookies } from '~/infrastructure/auth';
 import { safeHandler } from '~/presentation/trpc/errors';
 import { protectedProcedure, publicProcedure, router } from '~/presentation/trpc/trpc';
@@ -21,11 +21,12 @@ const LoginInputSchema = z.object({
 });
 
 export const authRouter = router({
+  // setAuthCookies and clearAuthCookies now return TaskEither directly
   register: publicProcedure.input(RegisterInputSchema).mutation(
     safeHandler(({ ctx, input }) =>
       pipe(
         registerUseCase(input)(ctx.env),
-        chainFirst((tokens) => tryCatch(() => setAuthCookies(tokens.accessToken, tokens.refreshToken), dbError)),
+        chainFirst((tokens) => setAuthCookies(tokens.accessToken, tokens.refreshToken)),
         map(() => ({ success: true }))
       )
     )
@@ -35,7 +36,7 @@ export const authRouter = router({
     safeHandler(({ ctx, input }) =>
       pipe(
         loginUseCase(input)(ctx.env),
-        chainFirst((tokens) => tryCatch(() => setAuthCookies(tokens.accessToken, tokens.refreshToken), dbError)),
+        chainFirst((tokens) => setAuthCookies(tokens.accessToken, tokens.refreshToken)),
         map(() => ({ success: true }))
       )
     )
@@ -45,7 +46,7 @@ export const authRouter = router({
     safeHandler(({ ctx }) =>
       pipe(
         logoutUseCase(ctx.refreshToken!)(ctx.env),
-        chainFirst(() => tryCatch(() => clearAuthCookies(), dbError)),
+        chainFirst(() => clearAuthCookies()),
         map(() => ({ success: true }))
       )
     )

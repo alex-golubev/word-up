@@ -2,14 +2,14 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { getCurrentUserUseCase } from '~/application/use-cases/auth/get-current-user';
-import { makeUserId, notFound } from '~/domain/types';
+import { notFound, unsafeMakeUserId } from '~/domain/types';
 import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
 
 import type { User } from '~/domain/types';
 
 const createTestUser = (overrides?: Partial<User>): User => ({
-  id: makeUserId(TEST_UUID.user),
+  id: unsafeMakeUserId(TEST_UUID.user),
   email: 'test@example.com',
   passwordHash: 'hashed-password',
   name: 'Test User',
@@ -19,7 +19,7 @@ const createTestUser = (overrides?: Partial<User>): User => ({
 });
 
 describe('getCurrentUserUseCase', () => {
-  const userId = makeUserId(TEST_UUID.user);
+  const userId = unsafeMakeUserId(TEST_UUID.user);
 
   it('should return public user data successfully', async () => {
     const user = createTestUser();

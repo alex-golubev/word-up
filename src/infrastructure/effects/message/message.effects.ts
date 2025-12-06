@@ -1,9 +1,13 @@
 import { eq } from 'drizzle-orm';
+import { sequenceS } from 'fp-ts/Apply';
+import { Apply, map } from 'fp-ts/Either';
+import { pipe } from 'fp-ts/function';
 
 import { makeConversationId, makeMessageId } from '~/domain/types';
 import { insertOne, queryMany } from '~/infrastructure/db/query-helpers';
 import { messages } from '~/infrastructure/db/schemas';
 
+import type { Either } from 'fp-ts/Either';
 import type { TaskEither } from 'fp-ts/TaskEither';
 
 import type { AppError, ConversationId, Message } from '~/domain/types';
@@ -16,13 +20,20 @@ export interface MessageEffects {
 
 type MessageRow = typeof messages.$inferSelect;
 
-const mapRowToMessage = (row: MessageRow): Message => ({
-  id: makeMessageId(row.id),
-  conversationId: makeConversationId(row.conversationId),
-  role: row.role,
-  content: row.content,
-  createdAt: row.createdAt,
-});
+const mapRowToMessage = (row: MessageRow): Either<AppError, Message> =>
+  pipe(
+    sequenceS(Apply)({
+      id: makeMessageId(row.id),
+      conversationId: makeConversationId(row.conversationId),
+    }),
+    map(({ id, conversationId }) => ({
+      id,
+      conversationId,
+      role: row.role,
+      content: row.content,
+      createdAt: row.createdAt,
+    }))
+  );
 
 export const createMessageEffects = (db: DBClient): MessageEffects => ({
   saveMessage: (message) =>

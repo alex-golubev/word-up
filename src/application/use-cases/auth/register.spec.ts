@@ -2,21 +2,24 @@ import { isLeft, isRight } from 'fp-ts/Either';
 import { left, right } from 'fp-ts/TaskEither';
 
 import { registerUseCase } from '~/application/use-cases/auth/register';
-import { dbError, emailAlreadyExists, makeUserId } from '~/domain/types';
+import { dbError, emailAlreadyExists, unsafeMakeUserId } from '~/domain/types';
 import { TEST_DATE, TEST_UUID } from '~/test/fixtures';
 import { createMockEnv } from '~/test/mock-env';
 
 import type { User } from '~/domain/types';
 
-jest.mock('~/infrastructure/auth', () => ({
-  hashPassword: jest.fn().mockResolvedValue('hashed-password'),
-  createAccessToken: jest.fn().mockResolvedValue('mock-access-token'),
-  createRefreshToken: jest.fn().mockResolvedValue('mock-refresh-token'),
-  getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date('2024-01-08')),
-}));
+jest.mock('~/infrastructure/auth', () => {
+  const { right } = jest.requireActual('fp-ts/TaskEither');
+  return {
+    hashPassword: jest.fn().mockResolvedValue('hashed-password'),
+    createAccessToken: jest.fn().mockReturnValue(right('mock-access-token')),
+    createRefreshToken: jest.fn().mockReturnValue(right('mock-refresh-token')),
+    getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date('2024-01-08')),
+  };
+});
 
 const createTestUser = (overrides?: Partial<User>): User => ({
-  id: makeUserId(TEST_UUID.user),
+  id: unsafeMakeUserId(TEST_UUID.user),
   email: 'test@example.com',
   passwordHash: 'hashed-password',
   name: 'Test User',

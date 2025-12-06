@@ -5,7 +5,7 @@ import { pipe } from 'fp-ts/function';
 import { chain, fromEither, sequenceArray } from 'fp-ts/TaskEither';
 
 import { validationError } from '~/domain/errors';
-import { makeMessageId, MessageContentSchema } from '~/domain/types';
+import { MessageContentSchema, unsafeMakeMessageId } from '~/domain/types';
 
 import type { Either } from 'fp-ts/Either';
 
@@ -33,7 +33,8 @@ const validateAndCreateMessage =
         (e) => validationError((e as Error).message)
       ),
       map(() => ({
-        id: makeMessageId(randomUUID()),
+        // randomUUID() always returns valid UUID
+        id: unsafeMakeMessageId(randomUUID()),
         conversationId,
         role: m.role,
         content: m.content,

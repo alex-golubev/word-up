@@ -1,10 +1,13 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import { tryCatch } from 'fp-ts/TaskEither';
+import { isLeft, map } from 'fp-ts/Either';
+import { pipe } from 'fp-ts/function';
+import { chain, left, right, tryCatch } from 'fp-ts/TaskEither';
 
-import { dbError, makeUserId } from '~/domain/types';
+import { dbError, makeUserId, notFound } from '~/domain/types';
 import { deleteMany, insertOne, queryOneOptional } from '~/infrastructure/db/query-helpers';
 import { refreshTokens } from '~/infrastructure/db/schemas';
 
+import type { Either } from 'fp-ts/Either';
 import type { TaskEither } from 'fp-ts/TaskEither';
 
 import type { AppError, RefreshToken, UserId } from '~/domain/types';
@@ -23,15 +26,19 @@ export interface RefreshTokenEffects {
 
 type RefreshTokenRow = typeof refreshTokens.$inferSelect;
 
-const mapRowToRefreshToken = (row: RefreshTokenRow): RefreshToken => ({
-  id: row.id,
-  userId: makeUserId(row.userId),
-  token: row.token,
-  expiresAt: row.expiresAt,
-  createdAt: row.createdAt,
-  usedAt: row.usedAt,
-  replacementToken: row.replacementToken,
-});
+const mapRowToRefreshToken = (row: RefreshTokenRow): Either<AppError, RefreshToken> =>
+  pipe(
+    makeUserId(row.userId),
+    map((userId) => ({
+      id: row.id,
+      userId,
+      token: row.token,
+      expiresAt: row.expiresAt,
+      createdAt: row.createdAt,
+      usedAt: row.usedAt,
+      replacementToken: row.replacementToken,
+    }))
+  );
 
 export const createRefreshTokenEffects = (db: DBClient): RefreshTokenEffects => ({
   saveRefreshToken: (userId: UserId, token: string, expiresAt: Date): TaskEither<AppError, RefreshToken> =>
@@ -54,28 +61,32 @@ export const createRefreshTokenEffects = (db: DBClient): RefreshTokenEffects => 
     token: string,
     replacementToken: string
   ): TaskEither<AppError, { marked: boolean; record: RefreshToken }> =>
-    tryCatch(
-      async () => {
-        // Attempt atomic update (only if usedAt is NULL)
-        const updated = await db
-          .update(refreshTokens)
-          .set({ usedAt: new Date(), replacementToken })
-          .where(and(eq(refreshTokens.token, token), isNull(refreshTokens.usedAt)))
-          .returning();
-
+    pipe(
+      tryCatch(
+        () =>
+          db
+            .update(refreshTokens)
+            .set({ usedAt: new Date(), replacementToken })
+            .where(and(eq(refreshTokens.token, token), isNull(refreshTokens.usedAt)))
+            .returning(),
+        dbError
+      ),
+      chain((updated) => {
         if (updated.length > 0) {
-          return { marked: true, record: mapRowToRefreshToken(updated[0]) };
+          const result = mapRowToRefreshToken(updated[0]);
+          return isLeft(result) ? left(result.left) : right({ marked: true, record: result.right });
         }
-
         // Token was already marked — get current state
-        const [existing] = await db.select().from(refreshTokens).where(eq(refreshTokens.token, token));
-
-        if (!existing) {
-          throw new Error('Token not found');
-        }
-
-        return { marked: false, record: mapRowToRefreshToken(existing) };
-      },
-      (error) => dbError(error)
+        return pipe(
+          tryCatch(() => db.select().from(refreshTokens).where(eq(refreshTokens.token, token)), dbError),
+          chain(([existing]) => {
+            if (!existing) {
+              return left(notFound('RefreshToken', token));
+            }
+            const result = mapRowToRefreshToken(existing);
+            return isLeft(result) ? left(result.left) : right({ marked: false, record: result.right });
+          })
+        );
+      })
     ),
 });

@@ -1,9 +1,12 @@
+import { isLeft, isRight } from 'fp-ts/Either';
+
 import {
   messageAppend,
   messageCreate,
   messageFilterByRole,
   messageFormatForAI,
   messageTakeLast,
+  unsafeMessageCreate,
 } from '~/domain/functions/message';
 import { createTestMessage, TEST_CONVERSATION_ID } from '~/test/fixtures';
 
@@ -16,37 +19,75 @@ describe('messageCreate', () => {
     content: 'Hello, world!',
   };
 
-  it('should create a message with valid content', () => {
-    const message = messageCreate(defaultParams);
+  it('should return Right with message for valid content', () => {
+    const result = messageCreate(defaultParams);
+
+    expect(isRight(result)).toBe(true);
+    if (isRight(result)) {
+      expect(result.right.conversationId).toBe(TEST_CONVERSATION_ID);
+      expect(result.right.role).toBe('user');
+      expect(result.right.content).toBe('Hello, world!');
+      expect(result.right.id).toBeDefined();
+      expect(result.right.createdAt).toBeInstanceOf(Date);
+    }
+  });
+
+  it('should return Left for empty content', () => {
+    const result = messageCreate({ ...defaultParams, content: '' });
+
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('ValidationError');
+    }
+  });
+
+  it('should return Left for whitespace-only content', () => {
+    const result = messageCreate({ ...defaultParams, content: '   ' });
+
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('ValidationError');
+    }
+  });
+
+  it('should return Left for content exceeding max length', () => {
+    const longContent = 'a'.repeat(10001);
+    const result = messageCreate({ ...defaultParams, role: 'assistant', content: longContent });
+
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left._tag).toBe('ValidationError');
+    }
+  });
+
+  it('should return Right for content at max length', () => {
+    const maxContent = 'a'.repeat(10000);
+    const result = messageCreate({ ...defaultParams, content: maxContent });
+
+    expect(isRight(result)).toBe(true);
+    if (isRight(result)) {
+      expect(result.right.content).toBe(maxContent);
+    }
+  });
+});
+
+describe('unsafeMessageCreate', () => {
+  const defaultParams = {
+    conversationId: TEST_CONVERSATION_ID,
+    role: 'user' as const,
+    content: 'Hello, world!',
+  };
+
+  it('should return message directly for valid content', () => {
+    const message = unsafeMessageCreate(defaultParams);
 
     expect(message.conversationId).toBe(TEST_CONVERSATION_ID);
     expect(message.role).toBe('user');
     expect(message.content).toBe('Hello, world!');
-    expect(message.id).toBeDefined();
-    expect(message.createdAt).toBeInstanceOf(Date);
   });
 
-  it('should throw error for empty content', () => {
-    expect(() => messageCreate({ ...defaultParams, content: '' })).toThrow('Message content cannot be empty');
-  });
-
-  it('should throw error for whitespace-only content', () => {
-    expect(() => messageCreate({ ...defaultParams, content: '   ' })).toThrow('Message content cannot be empty');
-  });
-
-  it('should throw error for content exceeding max length', () => {
-    const longContent = 'a'.repeat(10001);
-
-    expect(() => messageCreate({ ...defaultParams, role: 'assistant', content: longContent })).toThrow(
-      'Message content exceeds maximum length of 10000 characters'
-    );
-  });
-
-  it('should accept content at max length', () => {
-    const maxContent = 'a'.repeat(10000);
-    const message = messageCreate({ ...defaultParams, content: maxContent });
-
-    expect(message.content).toBe(maxContent);
+  it('should throw for invalid content', () => {
+    expect(() => unsafeMessageCreate({ ...defaultParams, content: '' })).toThrow();
   });
 });
 

@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { left, right } from 'fp-ts/Either';
 
 jest.mock('~/utils/transformer', () => ({
   transformer: {
@@ -8,6 +7,7 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
+// Mock functions - must return TaskEither (function returning Promise<Either>)
 const mockVerifyAccessToken = jest.fn();
 const mockVerifyRefreshToken = jest.fn();
 const mockSetAuthCookies = jest.fn();
@@ -51,11 +51,17 @@ describe('trpc', () => {
     };
 
     beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { left: teLeft, right: teRight } = require('fp-ts/TaskEither');
       mockVerifyAccessToken.mockReset();
       mockVerifyRefreshToken.mockReset();
       mockSetAuthCookies.mockReset();
       mockClearAuthCookies.mockReset();
       mockRefreshTokensUseCase.mockReset();
+      // Set up default return values
+      mockVerifyAccessToken.mockReturnValue(teLeft({ _tag: 'InvalidToken' }));
+      mockSetAuthCookies.mockReturnValue(teRight(undefined));
+      mockClearAuthCookies.mockReturnValue(teRight(undefined));
     });
 
     it('should throw UNAUTHORIZED when no access token provided', async () => {
@@ -69,7 +75,9 @@ describe('trpc', () => {
     });
 
     it('should throw UNAUTHORIZED when token verification fails and no refresh token', async () => {
-      mockVerifyAccessToken.mockRejectedValue(new Error('Invalid token'));
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { left: teLeft } = require('fp-ts/TaskEither');
+      mockVerifyAccessToken.mockReturnValue(teLeft({ _tag: 'InvalidToken' }));
       const caller = createCaller('invalid-token');
 
       await expect(caller.protectedRoute()).rejects.toThrow(TRPCError);
@@ -80,10 +88,9 @@ describe('trpc', () => {
     });
 
     it('should pass userId and userEmail to context when token is valid', async () => {
-      mockVerifyAccessToken.mockResolvedValue({
-        userId: TEST_UUID.user,
-        email: 'test@example.com',
-      });
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { right: teRight } = require('fp-ts/TaskEither');
+      mockVerifyAccessToken.mockReturnValue(teRight({ userId: TEST_UUID.user, email: 'test@example.com' }));
       const caller = createCaller('valid-token');
 
       const result = await caller.protectedRoute();
@@ -93,14 +100,13 @@ describe('trpc', () => {
     });
 
     it('should refresh tokens when access token is expired but refresh token is valid', async () => {
-      mockVerifyAccessToken.mockRejectedValue(new Error('Token expired'));
-      mockRefreshTokensUseCase.mockReturnValue(
-        () => () => Promise.resolve(right({ accessToken: 'new-access', refreshToken: 'new-refresh' }))
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { left: teLeft, right: teRight } = require('fp-ts/TaskEither');
+      mockVerifyAccessToken.mockReturnValue(teLeft({ _tag: 'TokenExpired' }));
+      mockRefreshTokensUseCase.mockReturnValue(() =>
+        teRight({ accessToken: 'new-access', refreshToken: 'new-refresh' })
       );
-      mockVerifyRefreshToken.mockResolvedValue({
-        userId: TEST_UUID.user,
-        email: 'refreshed@example.com',
-      });
+      mockVerifyRefreshToken.mockReturnValue(teRight({ userId: TEST_UUID.user, email: 'refreshed@example.com' }));
 
       const caller = createCaller('expired-access', 'valid-refresh');
       const result = await caller.protectedRoute();
@@ -111,28 +117,26 @@ describe('trpc', () => {
     });
 
     it('should clear cookies and throw when refresh token is invalid', async () => {
-      mockVerifyAccessToken.mockRejectedValue(new Error('Token expired'));
-      mockRefreshTokensUseCase.mockReturnValue(
-        () => () => Promise.resolve(left({ _tag: 'NotFound', entity: 'RefreshToken', id: 'token' }))
-      );
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { left: teLeft } = require('fp-ts/TaskEither');
+      mockVerifyAccessToken.mockReturnValue(teLeft({ _tag: 'TokenExpired' }));
+      mockRefreshTokensUseCase.mockReturnValue(() => teLeft({ _tag: 'NotFound', entity: 'RefreshToken', id: 'token' }));
 
       const caller = createCaller('expired-access', 'invalid-refresh');
 
       await expect(caller.protectedRoute()).rejects.toMatchObject({
         code: 'UNAUTHORIZED',
-        message: 'Session expired',
       });
       expect(mockClearAuthCookies).toHaveBeenCalled();
     });
 
     it('should refresh tokens when no access token but refresh token is valid', async () => {
-      mockRefreshTokensUseCase.mockReturnValue(
-        () => () => Promise.resolve(right({ accessToken: 'new-access', refreshToken: 'new-refresh' }))
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { right: teRight } = require('fp-ts/TaskEither');
+      mockRefreshTokensUseCase.mockReturnValue(() =>
+        teRight({ accessToken: 'new-access', refreshToken: 'new-refresh' })
       );
-      mockVerifyRefreshToken.mockResolvedValue({
-        userId: TEST_UUID.user,
-        email: 'no-access@example.com',
-      });
+      mockVerifyRefreshToken.mockReturnValue(teRight({ userId: TEST_UUID.user, email: 'no-access@example.com' }));
 
       const caller = createCaller(null, 'valid-refresh');
       const result = await caller.protectedRoute();

@@ -1,3 +1,5 @@
+import { isRight } from 'fp-ts/Either';
+
 const mockCookieStore = {
   set: jest.fn(),
   get: jest.fn(),
@@ -17,8 +19,9 @@ describe('cookies', () => {
 
   describe('setAuthCookies', () => {
     it('should set access and refresh token cookies with correct options', async () => {
-      await setAuthCookies('access-token-123', 'refresh-token-456');
+      const result = await setAuthCookies('access-token-123', 'refresh-token-456')();
 
+      expect(isRight(result)).toBe(true);
       expect(mockCookieStore.set).toHaveBeenCalledTimes(2);
       expect(mockCookieStore.set).toHaveBeenCalledWith('access_token', 'access-token-123', {
         httpOnly: true,
@@ -45,30 +48,37 @@ describe('cookies', () => {
         return undefined;
       });
 
-      const result = await getAuthCookies();
+      const result = await getAuthCookies()();
 
-      expect(result).toEqual({
-        accessToken: 'access-123',
-        refreshToken: 'refresh-456',
-      });
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        expect(result.right).toEqual({
+          accessToken: 'access-123',
+          refreshToken: 'refresh-456',
+        });
+      }
     });
 
     it('should return null for missing cookies', async () => {
       mockCookieStore.get.mockReturnValue(undefined);
 
-      const result = await getAuthCookies();
+      const result = await getAuthCookies()();
 
-      expect(result).toEqual({
-        accessToken: null,
-        refreshToken: null,
-      });
+      expect(isRight(result)).toBe(true);
+      if (isRight(result)) {
+        expect(result.right).toEqual({
+          accessToken: null,
+          refreshToken: null,
+        });
+      }
     });
   });
 
   describe('clearAuthCookies', () => {
     it('should delete both token cookies', async () => {
-      await clearAuthCookies();
+      const result = await clearAuthCookies()();
 
+      expect(isRight(result)).toBe(true);
       expect(mockCookieStore.delete).toHaveBeenCalledTimes(2);
       expect(mockCookieStore.delete).toHaveBeenCalledWith('access_token');
       expect(mockCookieStore.delete).toHaveBeenCalledWith('refresh_token');

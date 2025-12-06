@@ -1,8 +1,8 @@
 import { sequenceS } from 'fp-ts/Apply';
 import { pipe } from 'fp-ts/function';
-import { ApplyPar, chain, left, map, right, tryCatch } from 'fp-ts/TaskEither';
+import { ApplyPar, chain, left, map, right } from 'fp-ts/TaskEither';
 
-import { dbError, invalidToken, tokenExpired } from '~/domain/types';
+import { invalidToken, tokenExpired } from '~/domain/types';
 import {
   createAccessToken,
   createRefreshToken,
@@ -21,20 +21,19 @@ export const refreshTokensUseCase =
       env.getRefreshToken(oldRefreshToken),
       chain((tokenRecord) => (tokenRecord ? right(tokenRecord) : left(invalidToken()))),
       chain((tokenRecord) => (tokenRecord.expiresAt > new Date() ? right(tokenRecord) : left(tokenExpired()))),
+      // verifyRefreshToken now returns TaskEither directly
       chain((tokenRecord) =>
         pipe(
-          tryCatch(
-            () => verifyRefreshToken(oldRefreshToken),
-            () => invalidToken()
-          ),
+          verifyRefreshToken(oldRefreshToken),
           map((payload) => ({ tokenRecord, payload }))
         )
       ),
+      // createAccessToken and createRefreshToken now return TaskEither directly
       chain(({ tokenRecord, payload }) =>
         pipe(
           sequenceS(ApplyPar)({
-            accessToken: tryCatch(() => createAccessToken(payload), dbError),
-            refreshToken: tryCatch(() => createRefreshToken(payload), dbError),
+            accessToken: createAccessToken(payload),
+            refreshToken: createRefreshToken(payload),
           }),
           map((tokens) => ({ tokenRecord, payload, ...tokens }))
         )
@@ -59,12 +58,13 @@ export const refreshTokensUseCase =
               return left(tokenExpired());
             }
 
-            return tryCatch(
-              async () => ({
-                accessToken: await createAccessToken(payload),
+            // createAccessToken returns TaskEither, map to a final result
+            return pipe(
+              createAccessToken(payload),
+              map((newAccessToken) => ({
+                accessToken: newAccessToken,
                 refreshToken: record.replacementToken!,
-              }),
-              (error) => dbError(error)
+              }))
             );
           })
         )

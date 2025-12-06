@@ -6,6 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Word-Up is a language learning application built with Next.js 16, React 19, TypeScript, and TailwindCSS 4. It uses Clean Architecture with fp-ts for functional error handling and Drizzle ORM with Neon (PostgreSQL) for persistence.
 
+## Functional Programming
+
+This project strictly follows functional programming paradigm with fp-ts. **Deviating from FP is undesirable and allowed only in extreme cases.**
+
+### Core Principles
+
+1. **No throwing functions** — Functions that can fail return `Either<AppError, T>` (sync) or `TaskEither<AppError, T>` (async), never throw
+2. **No mutable state** — Use immutable data structures; if caching needed, use memoization closures
+3. **Side effects isolated** — Logging and other side effects injected via dependency injection
+4. **Total functions preferred** — Handle all inputs; partial functions marked with `unsafe*` prefix
+
+### Safe vs Unsafe Functions
+
+```typescript
+// Safe (total) — returns Either, handles all inputs
+makeUserId("invalid")     // → Left({ _tag: 'ValidationError', ... })
+makeUserId(validUUID)     // → Right(UserId)
+
+// Unsafe (partial) — throws on invalid input, use only when validity is guaranteed
+unsafeMakeUserId("invalid")  // 💥 throws
+unsafeMakeUserId(randomUUID()) // ✓ OK — randomUUID() always returns valid UUID
+```
+
+Use `unsafe*` only in:
+- Test fixtures with hardcoded valid values
+- When input validity is guaranteed by context (e.g., `randomUUID()`)
+
 ## Development Commands
 
 ```bash
@@ -72,12 +99,18 @@ User-facing concerns (tRPC API, React hooks, components).
 
 ### Branded Types with Zod
 
-Domain IDs use Zod's `.brand()` for type safety:
+Domain IDs use Zod's `.brand()` for type safety. Constructors return `Either` for safe validation:
 
 ```typescript
 const UserIdSchema = z.guid({ error: 'Invalid UserId' }).brand('UserId');
 export type UserId = z.infer<typeof UserIdSchema>;
-export const makeUserId = (id: string): UserId => UserIdSchema.parse(id);
+
+// Safe version — returns Either
+export const makeUserId = (id: string): Either<AppError, UserId> =>
+  tryCatch(() => UserIdSchema.parse(id), () => validationError(`Invalid UserId: ${id}`));
+
+// Unsafe version — for tests and guaranteed-valid inputs
+export const unsafeMakeUserId = (id: string): UserId => UserIdSchema.parse(id);
 ```
 
 ### Typed Errors with Discriminated Union
@@ -89,7 +122,13 @@ type AppError =
   | { readonly _tag: 'NotFound'; readonly entity: string; readonly id: string }
   | { readonly _tag: 'InsertFailed'; readonly entity: string; readonly cause?: unknown }
   | { readonly _tag: 'ValidationError'; readonly message: string }
-  | { readonly _tag: 'DbError'; readonly cause: unknown };
+  | { readonly _tag: 'DbError'; readonly cause: unknown }
+  | { readonly _tag: 'AiError'; readonly message: string; readonly cause?: unknown }
+  | { readonly _tag: 'InvalidCredentials' }
+  | { readonly _tag: 'EmailAlreadyExists'; readonly email: string }
+  | { readonly _tag: 'TokenExpired' }
+  | { readonly _tag: 'InvalidToken' }
+  | { readonly _tag: 'Unauthorized' };
 ```
 
 ### fp-ts TaskEither for Async Error Handling

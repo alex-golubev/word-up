@@ -65,6 +65,7 @@ const eslintConfig = defineConfig([
           varsIgnorePattern: '^_',
         },
       ],
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   // Override default ignores of eslint-config-next.

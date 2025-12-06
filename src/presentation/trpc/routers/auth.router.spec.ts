@@ -5,20 +5,24 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
-const mockSetAuthCookies = jest.fn().mockResolvedValue(undefined);
-const mockClearAuthCookies = jest.fn().mockResolvedValue(undefined);
+// Mock functions - must return TaskEither (function returning Promise<Either>)
+const mockSetAuthCookies = jest.fn();
+const mockClearAuthCookies = jest.fn();
 const mockVerifyAccessToken = jest.fn();
 
-jest.mock('~/infrastructure/auth', () => ({
-  setAuthCookies: (...args: unknown[]) => mockSetAuthCookies(...args),
-  clearAuthCookies: (...args: unknown[]) => mockClearAuthCookies(...args),
-  verifyAccessToken: (...args: unknown[]) => mockVerifyAccessToken(...args),
-  hashPassword: jest.fn().mockResolvedValue('hashed'),
-  verifyPassword: jest.fn().mockResolvedValue(true),
-  createAccessToken: jest.fn().mockResolvedValue('access-token'),
-  createRefreshToken: jest.fn().mockResolvedValue('refresh-token'),
-  getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date()),
-}));
+jest.mock('~/infrastructure/auth', () => {
+  const { right } = jest.requireActual('fp-ts/TaskEither');
+  return {
+    setAuthCookies: (...args: unknown[]) => mockSetAuthCookies(...args),
+    clearAuthCookies: () => mockClearAuthCookies(),
+    verifyAccessToken: (...args: unknown[]) => mockVerifyAccessToken(...args),
+    hashPassword: jest.fn().mockResolvedValue('hashed'),
+    verifyPassword: jest.fn().mockResolvedValue(true),
+    createAccessToken: jest.fn().mockReturnValue(right('access-token')),
+    createRefreshToken: jest.fn().mockReturnValue(right('refresh-token')),
+    getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date()),
+  };
+});
 
 jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
@@ -46,6 +50,12 @@ const createCaller = (
 describe('authRouter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { right } = require('fp-ts/TaskEither');
+    // Set up default mock return values as TaskEither
+    mockSetAuthCookies.mockReturnValue(right(undefined));
+    mockClearAuthCookies.mockReturnValue(right(undefined));
+    mockVerifyAccessToken.mockReturnValue(right({ userId: TEST_UUID.user, email: 'test@example.com' }));
   });
 
   describe('register', () => {
@@ -135,10 +145,7 @@ describe('authRouter', () => {
     it('should logout user and clear auth cookies', async () => {
       const mockDb = createMockDB();
 
-      mockVerifyAccessToken.mockResolvedValue({
-        userId: TEST_UUID.user,
-        email: 'test@example.com',
-      });
+      // mockVerifyAccessToken is set up in beforeEach with right({ userId, email })
 
       // deleteRefreshToken
       mockDb._mocks.mockWhere.mockResolvedValueOnce([]);
@@ -159,10 +166,7 @@ describe('authRouter', () => {
       const mockDb = createMockDB();
       const userRow = createTestUserRow();
 
-      mockVerifyAccessToken.mockResolvedValue({
-        userId: TEST_UUID.user,
-        email: 'test@example.com',
-      });
+      // mockVerifyAccessToken is set up in beforeEach with right({ userId, email })
 
       mockDb._mocks.mockWhere.mockResolvedValueOnce([userRow]);
 
@@ -176,10 +180,7 @@ describe('authRouter', () => {
     it('should throw error when user not found', async () => {
       const mockDb = createMockDB();
 
-      mockVerifyAccessToken.mockResolvedValue({
-        userId: TEST_UUID.user,
-        email: 'test@example.com',
-      });
+      // mockVerifyAccessToken is set up in beforeEach with right({ userId, email })
 
       mockDb._mocks.mockWhere.mockResolvedValueOnce([]);
 

@@ -211,7 +211,7 @@ describe('createRefreshTokenEffects', () => {
       }
     });
 
-    it('should return DbError when token not found after failed update', async () => {
+    it('should return NotFound when token not found after failed update', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
       // Mock the behavior when a token doesn't exist:
@@ -231,7 +231,7 @@ describe('createRefreshTokenEffects', () => {
 
       expect(isLeft(result)).toBe(true);
       if (isLeft(result)) {
-        expect(result.left._tag).toBe('DbError');
+        expect(result.left._tag).toBe('NotFound');
       }
     });
 

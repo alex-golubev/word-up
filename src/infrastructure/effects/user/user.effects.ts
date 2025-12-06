@@ -1,9 +1,12 @@
 import { eq } from 'drizzle-orm';
+import { map } from 'fp-ts/Either';
+import { pipe } from 'fp-ts/function';
 
 import { makeUserId } from '~/domain/types';
 import { insertOne, queryOne, queryOneOptional, updateOne } from '~/infrastructure/db/query-helpers';
 import { users } from '~/infrastructure/db/schemas';
 
+import type { Either } from 'fp-ts/Either';
 import type { TaskEither } from 'fp-ts/TaskEither';
 
 import type { AppError, Language, User, UserCreateParams, UserId } from '~/domain/types';
@@ -21,14 +24,18 @@ export interface UserEffects {
 
 type UserRow = typeof users.$inferSelect;
 
-const mapRowToUser = (row: UserRow): User => ({
-  id: makeUserId(row.id),
-  email: row.email,
-  passwordHash: row.passwordHash,
-  name: row.name,
-  nativeLanguage: row.nativeLanguage,
-  createdAt: row.createdAt,
-});
+const mapRowToUser = (row: UserRow): Either<AppError, User> =>
+  pipe(
+    makeUserId(row.id),
+    map((id) => ({
+      id,
+      email: row.email,
+      passwordHash: row.passwordHash,
+      name: row.name,
+      nativeLanguage: row.nativeLanguage,
+      createdAt: row.createdAt,
+    }))
+  );
 
 export const createUserEffects = (db: DBClient): UserEffects => ({
   getUserById: (userId) =>

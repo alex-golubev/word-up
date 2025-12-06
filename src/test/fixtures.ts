@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { makeConversationId, makeMessageId, makeScenarioId, makeUserId } from '~/domain/types';
+import { unsafeMakeConversationId, unsafeMakeMessageId, unsafeMakeScenarioId, unsafeMakeUserId } from '~/domain/types';
 
 import type { Conversation, Message, Scenario } from '~/domain/types';
 
@@ -20,15 +20,15 @@ export const INVALID_UUIDS = [
   'g1111111-1111-1111-1111-111111111111',
 ] as const;
 
-export const TEST_USER_ID = makeUserId(TEST_UUID.user);
-export const TEST_CONVERSATION_ID = makeConversationId(TEST_UUID.conversation);
-export const TEST_MESSAGE_ID = makeMessageId(TEST_UUID.message);
-export const TEST_SCENARIO_ID = makeScenarioId(TEST_UUID.scenario);
+export const TEST_USER_ID = unsafeMakeUserId(TEST_UUID.user);
+export const TEST_CONVERSATION_ID = unsafeMakeConversationId(TEST_UUID.conversation);
+export const TEST_MESSAGE_ID = unsafeMakeMessageId(TEST_UUID.message);
+export const TEST_SCENARIO_ID = unsafeMakeScenarioId(TEST_UUID.scenario);
 
 export const TEST_DATE = new Date('2024-01-01');
 
 export const createTestMessage = (overrides?: Partial<Message>): Message => ({
-  id: makeMessageId(randomUUID()),
+  id: unsafeMakeMessageId(randomUUID()),
   conversationId: TEST_CONVERSATION_ID,
   role: 'user',
   content: 'test content',
@@ -102,9 +102,8 @@ export const createTestConversationRow = (overrides?: Record<string, unknown>) =
   ...overrides,
 });
 
-// Mock DB client factory
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MockFn = jest.Mock<any, any>;
+// Mock DB client factory — jest.Mock defaults to any for flexibility in test configuration
+type MockFn = jest.Mock;
 
 export const createMockDB = () => {
   const mockReturning: MockFn = jest.fn();

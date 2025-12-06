@@ -1,4 +1,11 @@
+import { tryCatch } from 'fp-ts/Either';
 import { z } from 'zod';
+
+import { validationError } from '~/domain/errors';
+
+import type { Either } from 'fp-ts/Either';
+
+import type { AppError } from '~/domain/errors';
 
 export const UserIdSchema = z.guid({ error: 'Invalid UserId' }).brand('UserId');
 export const ConversationIdSchema = z.guid({ error: 'Invalid ConversationId' }).brand('ConversationId');
@@ -14,10 +21,36 @@ export type ConversationId = z.infer<typeof ConversationIdSchema>;
 export type MessageId = z.infer<typeof MessageIdSchema>;
 export type ScenarioId = z.infer<typeof ScenarioIdSchema>;
 
-export const makeUserId = (id: string): UserId => UserIdSchema.parse(id);
-export const makeConversationId = (id: string): ConversationId => ConversationIdSchema.parse(id);
-export const makeMessageId = (id: string): MessageId => MessageIdSchema.parse(id);
-export const makeScenarioId = (id: string): ScenarioId => ScenarioIdSchema.parse(id);
+// Safe versions - return Either<AppError, T>
+export const makeUserId = (id: string): Either<AppError, UserId> =>
+  tryCatch(
+    () => UserIdSchema.parse(id),
+    () => validationError(`Invalid UserId: ${id}`)
+  );
+
+export const makeConversationId = (id: string): Either<AppError, ConversationId> =>
+  tryCatch(
+    () => ConversationIdSchema.parse(id),
+    () => validationError(`Invalid ConversationId: ${id}`)
+  );
+
+export const makeMessageId = (id: string): Either<AppError, MessageId> =>
+  tryCatch(
+    () => MessageIdSchema.parse(id),
+    () => validationError(`Invalid MessageId: ${id}`)
+  );
+
+export const makeScenarioId = (id: string): Either<AppError, ScenarioId> =>
+  tryCatch(
+    () => ScenarioIdSchema.parse(id),
+    () => validationError(`Invalid ScenarioId: ${id}`)
+  );
+
+// Unsafe versions - throw on invalid input (for tests/fixtures with guaranteed valid data)
+export const unsafeMakeUserId = (id: string): UserId => UserIdSchema.parse(id);
+export const unsafeMakeConversationId = (id: string): ConversationId => ConversationIdSchema.parse(id);
+export const unsafeMakeMessageId = (id: string): MessageId => MessageIdSchema.parse(id);
+export const unsafeMakeScenarioId = (id: string): ScenarioId => ScenarioIdSchema.parse(id);
 
 export const MessageRoleSchema = z.enum(['user', 'assistant']);
 export const MessageContentSchema = z
