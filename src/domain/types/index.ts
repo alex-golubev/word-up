@@ -5,5 +5,4 @@ export * from '~/domain/types/scenario';
 export * from '~/domain/types/ai';
 export * from '~/domain/types/user';
 export * from '~/domain/types/auth';
-export * from '~/domain/types/speech';
 export * from '~/domain/errors';

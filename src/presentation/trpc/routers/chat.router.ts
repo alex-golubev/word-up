@@ -1,19 +1,26 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '~/presentation/trpc/trpc';
+
 import {
+  createConversationUseCase,
+  generateResponseFromHistoryUseCase,
+  generateSpeechUseCase,
+  getConversationUseCase,
+  saveMessagesUseCase,
+} from '~/application/use-cases';
+import {
+  ChatMessageSchema,
   ConversationIdSchema,
   LanguageSchema,
   MessageContentSchema,
   MessageRoleSchema,
   ScenarioIdSchema,
   ScenarioSchema,
+  SpeechVoiceSchema,
   UserIdSchema,
   UserLevelSchema,
 } from '~/domain/types';
-import { createConversationUseCase, generateSpeechUseCase, getConversationUseCase } from '~/application/use-cases';
-import { generateResponseFromHistoryUseCase } from '~/application/use-cases/generate-response-from-history';
-import { saveMessagesUseCase } from '~/application/use-cases/save-messages';
 import { safeHandler } from '~/presentation/trpc/errors';
+import { publicProcedure, router } from '~/presentation/trpc/trpc';
 
 const CreateConversationInputSchema = z.object({
   userId: UserIdSchema,
@@ -26,12 +33,7 @@ const GetConversationInputSchema = z.object({ conversationId: ConversationIdSche
 
 const GenerateSpeechInputSchema = z.object({
   text: MessageContentSchema,
-  voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
-});
-
-const ChatMessageSchema = z.object({
-  role: MessageRoleSchema,
-  content: MessageContentSchema,
+  voice: SpeechVoiceSchema.optional(),
 });
 
 const GenerateResponseFromHistoryInputSchema = z.object({

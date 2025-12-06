@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type SyncedPlaybackState = {
   isPlaying: boolean;
@@ -51,7 +51,7 @@ export const useSyncedPlayback = () => {
 
   const play = useCallback(
     (base64Audio: string, text: string, onComplete?: () => void) => {
-      // Cleanup previous playback
+      // Clean up previous playback
       cleanup();
       onCompleteRef.current = onComplete ?? null;
 
@@ -103,7 +103,7 @@ export const useSyncedPlayback = () => {
     setState((prev) => ({ ...prev, displayedText: '', fullText: '' }));
   }, []);
 
-  // Cleanup on unmount to prevent memory leaks
+  // Cleanup on unmounting to prevent memory leaks
   useEffect(() => {
     return () => cleanup();
   }, [cleanup]);

@@ -1,5 +1,6 @@
-import { renderHook, act } from '@testing-library/react';
-import { useSyncedPlayback } from './useSyncedPlayback';
+import { act, renderHook } from '@testing-library/react';
+
+import { useSyncedPlayback } from '~/presentation/hooks/useSyncedPlayback';
 
 type MockAudio = {
   play: jest.Mock;

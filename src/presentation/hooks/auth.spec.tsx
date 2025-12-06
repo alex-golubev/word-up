@@ -1,4 +1,6 @@
+/* eslint-disable import/order */
 import { renderHook } from '@testing-library/react';
+
 import type { ReactNode } from 'react';
 
 const mockUseQuery = jest.fn();

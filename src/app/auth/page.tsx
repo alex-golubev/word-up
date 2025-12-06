@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { trpc } from '~/presentation/hooks/trpc';
-import { useAuth } from '~/presentation/hooks/auth';
+
+import { trpc, useAuth } from '~/presentation/hooks';
+
 import type { FormEvent } from 'react';
 
 type Tab = 'login' | 'register';

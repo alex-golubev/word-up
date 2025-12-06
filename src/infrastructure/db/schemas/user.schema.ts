@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+
 import { languageEnum } from '~/infrastructure/db/schemas';
 
 export const users = pgTable('users', {

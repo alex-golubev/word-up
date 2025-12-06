@@ -5,8 +5,8 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
-const mockSetAuthCookies = jest.fn();
-const mockClearAuthCookies = jest.fn();
+const mockSetAuthCookies = jest.fn().mockResolvedValue(undefined);
+const mockClearAuthCookies = jest.fn().mockResolvedValue(undefined);
 const mockVerifyAccessToken = jest.fn();
 
 jest.mock('~/infrastructure/auth', () => ({
@@ -20,15 +20,15 @@ jest.mock('~/infrastructure/auth', () => ({
   getRefreshTokenExpiry: jest.fn().mockReturnValue(new Date()),
 }));
 
-jest.mock('~/infrastructure/effects/openai.effects', () => ({
+jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn(),
   }),
 }));
 
-import { authRouter } from '~/presentation/trpc/routers/auth.router';
-import { TEST_UUID, createMockDB, createTestUserRow, createTestRefreshTokenRow } from '~/test/fixtures';
 import { createAppEnv } from '~/infrastructure/env';
+import { authRouter } from '~/presentation/trpc/routers/auth.router';
+import { createMockDB, createTestRefreshTokenRow, createTestUserRow, TEST_UUID } from '~/test/fixtures';
 
 const createCaller = (
   db: ReturnType<typeof createMockDB>,

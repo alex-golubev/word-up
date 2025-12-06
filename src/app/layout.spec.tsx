@@ -1,12 +1,16 @@
 import { render, screen } from '@testing-library/react';
-import RootLayout from './layout';
 
+import RootLayout from '~/app/layout';
+
+import type { ReactNode } from 'react';
+
+// noinspection JSUnusedGlobalSymbols
 jest.mock('next/font/google', () => ({
   Inter: () => ({ className: 'inter-font' }),
 }));
 
 jest.mock('~/presentation/components/TrpcProvider', () => ({
-  TrpcProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TrpcProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
 const originalError = console.error;

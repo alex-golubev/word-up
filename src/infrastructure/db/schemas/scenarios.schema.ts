@@ -1,4 +1,5 @@
 import { pgTable, text, varchar } from 'drizzle-orm/pg-core';
+
 import { languageEnum, levelEnum } from '~/infrastructure/db/schemas';
 
 export const scenarios = pgTable('scenarios', {

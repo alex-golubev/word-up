@@ -2,9 +2,10 @@ import {
   createConversationEffects,
   createMessageEffects,
   createOpenAIEffects,
-  createUserEffects,
   createRefreshTokenEffects,
+  createUserEffects,
 } from '~/infrastructure/effects';
+
 import type { AppEnv } from '~/application/env';
 import type { DBClient } from '~/infrastructure/db/client';
 import type { OpenAiConfig } from '~/infrastructure/effects';

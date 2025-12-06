@@ -8,7 +8,7 @@ jest.mock('next/headers', () => ({
   cookies: jest.fn(() => Promise.resolve(mockCookieStore)),
 }));
 
-import { setAuthCookies, getAuthCookies, clearAuthCookies } from './cookies';
+import { clearAuthCookies, getAuthCookies, setAuthCookies } from './cookies';
 
 describe('cookies', () => {
   beforeEach(() => {

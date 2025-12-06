@@ -8,15 +8,15 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
-jest.mock('~/infrastructure/effects/openai.effects', () => ({
+jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn().mockReturnValue(right({ content: 'mocked response' })),
   }),
 }));
 
-import { chatRouter } from '~/presentation/trpc/routers/chat.router';
-import { TEST_UUID, createMockDB, createTestConversationRow, createTestMessageRow } from '~/test/fixtures';
 import { createAppEnv } from '~/infrastructure/env';
+import { chatRouter } from '~/presentation/trpc/routers/chat.router';
+import { createMockDB, createTestConversationRow, createTestMessageRow, TEST_UUID } from '~/test/fixtures';
 
 const createCaller = (db: ReturnType<typeof createMockDB>) => {
   const env = createAppEnv({ db: db as never, openai: { apiKey: 'test-key' } });
@@ -97,6 +97,7 @@ describe('chatRouter', () => {
 
   describe('getConversation', () => {
     // Helper to create thenable mock that works for both parallel queries
+    // noinspection JSUnusedGlobalSymbols
     const createWhereResult = (conversationRows: unknown[], messageRows: unknown[]) => ({
       // For messages query - chained with orderBy
       orderBy: jest.fn().mockResolvedValue(messageRows),

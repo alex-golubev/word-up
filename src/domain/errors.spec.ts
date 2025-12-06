@@ -1,15 +1,15 @@
 import {
-  notFound,
-  insertFailed,
-  validationError,
-  dbError,
   aiError,
-  invalidCredentials,
+  dbError,
   emailAlreadyExists,
-  tokenExpired,
-  invalidToken,
-  unauthorized,
   getErrorMessage,
+  insertFailed,
+  invalidCredentials,
+  invalidToken,
+  notFound,
+  tokenExpired,
+  unauthorized,
+  validationError,
 } from '~/domain/errors';
 
 describe('error constructors', () => {

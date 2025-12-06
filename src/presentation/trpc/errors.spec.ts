@@ -1,20 +1,22 @@
 import { TRPCError } from '@trpc/server';
 import { left, right } from 'fp-ts/TaskEither';
+
 import {
-  notFound,
-  insertFailed,
-  validationError,
-  dbError,
   aiError,
-  invalidCredentials,
+  dbError,
   emailAlreadyExists,
-  tokenExpired,
+  insertFailed,
+  invalidCredentials,
   invalidToken,
+  notFound,
+  tokenExpired,
   unauthorized,
+  validationError,
 } from '~/domain/types';
 import { appErrorToTRPC, runEffect, safeHandler } from '~/presentation/trpc/errors';
-import type { Context } from '~/presentation/trpc/context';
 import { createMockEnv } from '~/test/mock-env';
+
+import type { Context } from '~/presentation/trpc/context';
 
 describe('appErrorToTRPC', () => {
   it('should convert NotFound to NOT_FOUND TRPCError', () => {

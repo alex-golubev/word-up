@@ -1,9 +1,12 @@
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Inter } from 'next/font/google';
-import { TrpcProvider } from '~/presentation/components/TrpcProvider';
-import type { ReactNode } from 'react';
+
+import { TrpcProvider } from '~/presentation/components';
+
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });

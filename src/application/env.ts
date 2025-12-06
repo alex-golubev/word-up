@@ -1,4 +1,5 @@
 import type { TaskEither } from 'fp-ts/TaskEither';
+
 import type {
   AppError,
   ChatMessage,
@@ -11,8 +12,8 @@ import type {
   SpeechResponse,
   SpeechVoice,
   User,
-  UserId,
   UserCreateParams,
+  UserId,
 } from '~/domain/types';
 
 export type AppEnv = {

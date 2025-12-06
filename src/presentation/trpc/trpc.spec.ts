@@ -25,15 +25,15 @@ jest.mock('~/application/use-cases', () => ({
   refreshTokensUseCase: (...args: unknown[]) => mockRefreshTokensUseCase(...args),
 }));
 
-jest.mock('~/infrastructure/effects/openai.effects', () => ({
+jest.mock('~/infrastructure/effects/ai/openai.effects', () => ({
   createOpenAIEffects: () => ({
     generateChatCompletion: jest.fn(),
   }),
 }));
 
-import { router, protectedProcedure } from '~/presentation/trpc/trpc';
 import { createAppEnv } from '~/infrastructure/env';
-import { createMockDB } from '~/test/fixtures';
+import { protectedProcedure, router } from '~/presentation/trpc/trpc';
+import { createMockDB, TEST_UUID } from '~/test/fixtures';
 
 describe('trpc', () => {
   describe('protectedProcedure', () => {
@@ -81,7 +81,7 @@ describe('trpc', () => {
 
     it('should pass userId and userEmail to context when token is valid', async () => {
       mockVerifyAccessToken.mockResolvedValue({
-        userId: '11111111-1111-1111-1111-111111111111',
+        userId: TEST_UUID.user,
         email: 'test@example.com',
       });
       const caller = createCaller('valid-token');
@@ -98,7 +98,7 @@ describe('trpc', () => {
         () => () => Promise.resolve(right({ accessToken: 'new-access', refreshToken: 'new-refresh' }))
       );
       mockVerifyRefreshToken.mockResolvedValue({
-        userId: '22222222-2222-2222-2222-222222222222',
+        userId: TEST_UUID.user,
         email: 'refreshed@example.com',
       });
 
@@ -123,6 +123,23 @@ describe('trpc', () => {
         message: 'Session expired',
       });
       expect(mockClearAuthCookies).toHaveBeenCalled();
+    });
+
+    it('should refresh tokens when no access token but refresh token is valid', async () => {
+      mockRefreshTokensUseCase.mockReturnValue(
+        () => () => Promise.resolve(right({ accessToken: 'new-access', refreshToken: 'new-refresh' }))
+      );
+      mockVerifyRefreshToken.mockResolvedValue({
+        userId: TEST_UUID.user,
+        email: 'no-access@example.com',
+      });
+
+      const caller = createCaller(null, 'valid-refresh');
+      const result = await caller.protectedRoute();
+
+      expect(result.userEmail).toBe('no-access@example.com');
+      expect(mockVerifyAccessToken).not.toHaveBeenCalled();
+      expect(mockSetAuthCookies).toHaveBeenCalledWith('new-access', 'new-refresh');
     });
   });
 });
