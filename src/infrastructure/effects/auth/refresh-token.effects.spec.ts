@@ -194,7 +194,7 @@ describe('createRefreshTokenEffects', () => {
       db._mocks.mockWhere.mockImplementation(() => {
         whereCallCount++;
         if (whereCallCount === 1) {
-          // First call from update - return object with returning
+          // First call from update - return an object with returning
           return { returning: jest.fn().mockResolvedValue([]) };
         }
         // Second call from select - return promise directly
@@ -214,7 +214,7 @@ describe('createRefreshTokenEffects', () => {
     it('should return DbError when token not found after failed update', async () => {
       const db = createMockDB() as unknown as DBClient & { _mocks: Record<string, jest.Mock> };
 
-      // Mock the behavior when token doesn't exist:
+      // Mock the behavior when a token doesn't exist:
       // 1. update() returns [] (no rows updated)
       // 2. select() returns [] (token not found) - throws error
       let whereCallCount = 0;

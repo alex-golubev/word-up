@@ -9,10 +9,6 @@ jest.mock('~/utils/transformer', () => ({
   },
 }));
 
-jest.mock('~/infrastructure/db/client', () => ({
-  createDBClient: () => ({}),
-}));
-
 import { GET, POST } from './route';
 
 const createRequest = (method: string, path: string, body?: unknown) => {

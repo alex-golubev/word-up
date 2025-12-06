@@ -32,6 +32,6 @@ export const loginUseCase =
         )
       ),
 
-      // 3. Create JWT tokens and save refresh token
+      // 3. Create JWT tokens and save a refresh token
       chain((user) => createAndPersistAuthTokens(env, user.id, user.email))
     );

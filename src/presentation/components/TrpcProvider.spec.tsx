@@ -1,22 +1,24 @@
 /* eslint-disable import/order */
 import { render, screen } from '@testing-library/react';
 
+import type { ReactNode } from 'react';
+
 jest.mock('~/utils/transformer', () => ({
   transformer: {},
 }));
 
 jest.mock('@trpc/client', () => ({
-  httpBatchStreamLink: jest.fn(() => ({})),
+  httpBatchLink: jest.fn(() => ({})),
 }));
 
 jest.mock('~/presentation/hooks', () => ({
   trpc: {
     createClient: jest.fn(() => ({})),
-    Provider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    Provider: ({ children }: { children: ReactNode }) => <>{children}</>,
   },
 }));
 
-import { httpBatchStreamLink } from '@trpc/client';
+import { httpBatchLink } from '@trpc/client';
 
 import { trpc } from '~/presentation/hooks';
 
@@ -34,14 +36,14 @@ describe('TrpcProvider', () => {
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
 
-  it('should create trpc client with httpBatchStreamLink', () => {
+  it('should create trpc client with httpBatchLink', () => {
     render(
       <TrpcProvider>
         <div>Content</div>
       </TrpcProvider>
     );
 
-    expect(httpBatchStreamLink).toHaveBeenCalledWith({
+    expect(httpBatchLink).toHaveBeenCalledWith({
       url: '/api/trpc',
       transformer: {},
     });

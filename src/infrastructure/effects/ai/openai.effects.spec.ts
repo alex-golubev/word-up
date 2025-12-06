@@ -130,6 +130,7 @@ describe('createOpenAIEffects', () => {
   });
 
   describe('generateSpeech', () => {
+    // noinspection JSUnusedGlobalSymbols
     const createMockAudioResponse = (base64Content: string) => ({
       arrayBuffer: () => Promise.resolve(Buffer.from(base64Content)),
     });

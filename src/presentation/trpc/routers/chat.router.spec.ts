@@ -97,6 +97,7 @@ describe('chatRouter', () => {
 
   describe('getConversation', () => {
     // Helper to create thenable mock that works for both parallel queries
+    // noinspection JSUnusedGlobalSymbols
     const createWhereResult = (conversationRows: unknown[], messageRows: unknown[]) => ({
       // For messages query - chained with orderBy
       orderBy: jest.fn().mockResolvedValue(messageRows),

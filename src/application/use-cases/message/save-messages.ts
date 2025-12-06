@@ -48,5 +48,5 @@ export const saveMessagesUseCase =
       params.messages,
       traverseArray(validateAndCreateMessage(params.conversationId)),
       fromEither,
-      chain((msgs) => sequenceArray(msgs.map((msg) => env.saveMessage(msg))))
+      chain((messages) => sequenceArray(messages.map((msg) => env.saveMessage(msg))))
     );

@@ -13,9 +13,14 @@ export type OpenAiConfig = {
   readonly model?: string;
 };
 
+export interface OpenAiEffects {
+  readonly generateChatCompletion: (messages: readonly ChatMessage[]) => TaskEither<AppError, GenerateResponse>;
+  readonly generateSpeech: (text: string, voice?: SpeechVoice) => TaskEither<AppError, SpeechResponse>;
+}
+
 const DEFAULT_MODEL = 'gpt-4o-mini';
 
-export const createOpenAIEffects = (config: OpenAiConfig) => {
+export const createOpenAIEffects = (config: OpenAiConfig): OpenAiEffects => {
   const client = new OpenAI({ apiKey: config.apiKey });
   const model = config.model ?? DEFAULT_MODEL;
 
@@ -50,5 +55,3 @@ export const createOpenAIEffects = (config: OpenAiConfig) => {
       ),
   };
 };
-
-export type OpenAiEffects = ReturnType<typeof createOpenAIEffects>;

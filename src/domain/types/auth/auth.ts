@@ -22,18 +22,15 @@ export type JwtPayload = {
   readonly email: string;
 };
 
-export const EmailSchema = z
-  .string()
-  .email({ message: 'Invalid email format' })
-  .max(255, { message: 'Email is too long' });
+export const EmailSchema = z.email({ error: 'Invalid email format' }).max(255, { error: 'Email is too long' });
 
 export const PasswordSchema = z
   .string()
-  .min(8, { message: 'Password must be at least 8 characters' })
-  .max(100, { message: 'Password is too long' });
+  .min(8, { error: 'Password must be at least 8 characters' })
+  .max(100, { error: 'Password is too long' });
 
 export const NameSchema = z
   .string()
-  .min(1, { message: 'Name cannot be empty' })
-  .max(100, { message: 'Name is too long' })
+  .min(1, { error: 'Name cannot be empty' })
+  .max(100, { error: 'Name is too long' })
   .optional();

@@ -71,14 +71,14 @@ export default function TestPage() {
     if (!conversation || !userMessage.trim()) return;
 
     const messageText = userMessage.trim();
-    const userMessageTime = new Date(); // Real time when user sent message
+    const userMessageTime = new Date(); // Real time when a user sent a message
     setError(null);
     setIsLoading(true);
     setUserMessage('');
     setPendingUserMessage(messageText);
 
     try {
-      // 1. Generate AI response (history from client, no DB reads)
+      // 1. Generate AI response (history from a client, no DB reads)
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
       const response = await generateResponseFromHistory.mutateAsync({
         scenario: TEST_SCENARIO,
@@ -234,7 +234,7 @@ export default function TestPage() {
                   </div>
                 </div>
               ))}
-              {/* Show pending user message until it appears in messages from server */}
+              {/* Show a pending user message until it appears in messages from the server */}
               {pendingUserMessage && !messages.some((m) => m.role === 'user' && m.content === pendingUserMessage) && (
                 <div className="flex justify-end">
                   <div className="max-w-[80%] rounded-2xl rounded-br-md bg-indigo-100 px-4 py-3 text-gray-800">

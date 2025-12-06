@@ -5,8 +5,8 @@ export const ConversationIdSchema = z.guid({ error: 'Invalid ConversationId' }).
 export const MessageIdSchema = z.guid({ error: 'Invalid MessageId' }).brand('MessageId');
 export const ScenarioIdSchema = z
   .string()
-  .min(1, { message: 'Invalid ScenarioId' })
-  .max(50, { message: 'Invalid ScenarioId' })
+  .min(1, { error: 'Invalid ScenarioId' })
+  .max(50, { error: 'Invalid ScenarioId' })
   .brand('ScenarioId');
 
 export type UserId = z.infer<typeof UserIdSchema>;
@@ -22,14 +22,11 @@ export const makeScenarioId = (id: string): ScenarioId => ScenarioIdSchema.parse
 export const MessageRoleSchema = z.enum(['user', 'assistant']);
 export const MessageContentSchema = z
   .string()
-  .refine((val) => val.trim().length > 0, { message: 'Message content cannot be empty' })
-  .refine((val) => val.length <= 10000, {
-    message: 'Message content exceeds maximum length of 10000 characters',
-  });
+  .refine((val) => val.trim().length > 0, { error: 'Message content cannot be empty' })
+  .refine((val) => val.length <= 10000, { error: 'Message content exceeds maximum length of 10000 characters' });
 export const UserLevelSchema = z.enum(['beginner', 'intermediate', 'advanced']);
 export const LanguageSchema = z.enum(['en', 'ru', 'es', 'fr', 'de']);
 
 export type MessageRole = z.infer<typeof MessageRoleSchema>;
-export type MessageContent = z.infer<typeof MessageContentSchema>;
 export type UserLevel = z.infer<typeof UserLevelSchema>;
 export type Language = z.infer<typeof LanguageSchema>;
