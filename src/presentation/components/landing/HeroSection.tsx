@@ -1,5 +1,6 @@
 import Image from 'next/image';
-import Link from 'next/link';
+
+import { Button } from '~/presentation/components/ui';
 
 import { Header } from './Header';
 
@@ -23,12 +24,9 @@ export function HeroSection() {
               Learn at your own pace, with lifetime access on mobile and desktop
             </p>
 
-            <Link
-              href="/"
-              className="mt-8 inline-flex w-fit rounded-full bg-indigo-500 px-10 py-4 text-base font-medium text-white transition-colors hover:bg-indigo-600"
-            >
+            <Button href="/" size="large" className="mt-8 w-fit">
               Get started
-            </Link>
+            </Button>
           </div>
 
           <div className="relative flex items-center justify-center">

@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { Button } from '~/presentation/components/ui';
+
 const navLinks = [
   { href: '/', label: 'Courses' },
   { href: '/', label: 'About us' },
@@ -34,12 +36,9 @@ export function Header() {
         ))}
       </nav>
 
-      <Link
-        href="/"
-        className="rounded-full bg-white px-7 py-3 text-base font-medium text-indigo-500 transition-colors hover:bg-indigo-50"
-      >
+      <Button href="/" variant="secondary" size="small">
         Get started
-      </Link>
+      </Button>
     </header>
   );
 }
