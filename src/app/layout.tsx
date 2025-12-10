@@ -23,11 +23,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preload" href="/hero-image.png" as="image" fetchPriority="high" />
-      </head>
       <body className={`${poppins.className} antialiased`}>
         <TrpcProvider>
           {children}
