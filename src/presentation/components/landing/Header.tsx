@@ -36,7 +36,7 @@ export function Header() {
         ))}
       </nav>
 
-      <Button href="/" variant="secondary" size="small">
+      <Button href="/auth" variant="secondary" size="small">
         Get started
       </Button>
     </header>

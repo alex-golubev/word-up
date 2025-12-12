@@ -24,7 +24,7 @@ export function HeroSection() {
               Learn at your own pace, with lifetime access on mobile and desktop
             </p>
 
-            <Button href="/" size="large" className="mt-8 w-fit">
+            <Button href="/auth" size="large" className="mt-8 w-fit">
               Get started
             </Button>
           </div>
