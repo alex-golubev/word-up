@@ -80,23 +80,3 @@ function CoursesCard() {
     </div>
   );
 }
-
-// const avatarColors = ['bg-rose-300', 'bg-amber-300', 'bg-emerald-300', 'bg-sky-300'] as const;
-
-// function StudentsCard() {
-//   return (
-//     <div className="absolute -right-4 bottom-8 z-20 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-lg lg:-right-12">
-//       <div className="flex -space-x-2">
-//         {avatarColors.map((color, i) => (
-//           <div
-//             key={color}
-//             className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-medium text-white ${color}`}
-//           >
-//             {i === 3 ? '+50' : ''}
-//           </div>
-//         ))}
-//       </div>
-//       <p className="text-sm font-medium text-zinc-900">Dedicated students per day</p>
-//     </div>
-//   );
-// }
