@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 
 // noinspection JSUnusedGlobalSymbols
 jest.mock('next/font/google', () => ({
-  Inter: () => ({ className: 'inter-font' }),
+  Poppins: () => ({ className: 'poppins-font' }),
 }));
 
 jest.mock('~/presentation/components/TrpcProvider', () => ({
@@ -51,7 +51,7 @@ describe('RootLayout', () => {
     expect(html).toHaveAttribute('lang', 'en');
   });
 
-  it('should apply inter font class to body', () => {
+  it('should apply poppins font class to body', () => {
     render(
       <RootLayout>
         <div>Content</div>
@@ -59,7 +59,7 @@ describe('RootLayout', () => {
     );
 
     const body = document.querySelector('body');
-    expect(body).toHaveClass('inter-font');
+    expect(body).toHaveClass('poppins-font');
     expect(body).toHaveClass('antialiased');
   });
 });
