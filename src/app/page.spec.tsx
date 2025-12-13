@@ -12,9 +12,7 @@ describe('Home', () => {
   it('should render the description', () => {
     render(<Home />);
 
-    expect(
-      screen.getByText('Learn at your own pace, with lifetime access on mobile and desktop')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Learn at your own pace, with lifetime access on mobile and desktop')).toBeInTheDocument();
   });
 
   it('should render the get started button', () => {

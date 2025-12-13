@@ -32,21 +32,33 @@ describe('Button', () => {
   });
 
   it('should apply success classes for primary variant', () => {
-    render(<Button state="success" variant="primary">Success</Button>);
+    render(
+      <Button state="success" variant="primary">
+        Success
+      </Button>
+    );
 
     const button = screen.getByRole('button', { name: 'Success' });
     expect(button).toHaveClass('bg-emerald-500', 'text-white');
   });
 
   it('should apply success classes for ghost variant', () => {
-    render(<Button state="success" variant="ghost">Success</Button>);
+    render(
+      <Button state="success" variant="ghost">
+        Success
+      </Button>
+    );
 
     const button = screen.getByRole('button', { name: 'Success' });
     expect(button).toHaveClass('text-emerald-500');
   });
 
   it('should use indigo spinner color for secondary variant', () => {
-    render(<Button state="loading" variant="secondary">Loading</Button>);
+    render(
+      <Button state="loading" variant="secondary">
+        Loading
+      </Button>
+    );
 
     const button = screen.getByRole('button', { name: 'Loading' });
     const spinner = button.querySelector('svg');
