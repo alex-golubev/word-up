@@ -52,7 +52,9 @@ describe('AuthPage', () => {
 
       render(<AuthPage />);
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      // Loading spinner is shown (no text, just the spinner element)
+      const spinner = document.querySelector('.animate-spin');
+      expect(spinner).toBeInTheDocument();
     });
   });
 
@@ -76,7 +78,7 @@ describe('AuthPage', () => {
     it('should display user info when authenticated', () => {
       render(<AuthPage />);
 
-      expect(screen.getByText('Welcome!')).toBeInTheDocument();
+      expect(screen.getByText('Welcome back!')).toBeInTheDocument();
       expect(screen.getByText('test@example.com')).toBeInTheDocument();
       expect(screen.getByText('Test User')).toBeInTheDocument();
     });
@@ -108,7 +110,7 @@ describe('AuthPage', () => {
       expect(screen.getByRole('button', { name: /logging out/i })).toBeDisabled();
     });
 
-    it('should display dash for empty name', () => {
+    it('should not display name row when name is empty', () => {
       mockUseAuth.mockReturnValue({
         user: { ...mockUser, name: null },
         isLoading: false,
@@ -117,7 +119,8 @@ describe('AuthPage', () => {
 
       render(<AuthPage />);
 
-      expect(screen.getByText('—')).toBeInTheDocument();
+      // Name row should not be present
+      expect(screen.queryByText('Name')).not.toBeInTheDocument();
     });
   });
 
@@ -133,29 +136,29 @@ describe('AuthPage', () => {
     it('should show login form by default', () => {
       render(<AuthPage />);
 
-      const tabs = screen.getAllByRole('button', { name: 'Login' });
-      expect(tabs[0]).toHaveClass('bg-zinc-900'); // Tab button is active
+      const signInTab = screen.getByRole('button', { name: 'Sign In' });
+      expect(signInTab).toHaveClass('bg-indigo-500');
     });
 
     it('should switch to register tab when clicked', () => {
       render(<AuthPage />);
 
-      const registerTabs = screen.getAllByRole('button', { name: 'Register' });
-      fireEvent.click(registerTabs[0]);
+      const signUpTab = screen.getByRole('button', { name: 'Sign Up' });
+      fireEvent.click(signUpTab);
 
-      expect(registerTabs[0]).toHaveClass('bg-zinc-900');
+      expect(signUpTab).toHaveClass('bg-indigo-500');
     });
 
     it('should switch back to login tab when clicked', () => {
       render(<AuthPage />);
 
-      const registerTabs = screen.getAllByRole('button', { name: 'Register' });
-      fireEvent.click(registerTabs[0]);
+      const signUpTab = screen.getByRole('button', { name: 'Sign Up' });
+      fireEvent.click(signUpTab);
 
-      const loginTabs = screen.getAllByRole('button', { name: 'Login' });
-      fireEvent.click(loginTabs[0]);
+      const signInTab = screen.getByRole('button', { name: 'Sign In' });
+      fireEvent.click(signInTab);
 
-      expect(loginTabs[0]).toHaveClass('bg-zinc-900');
+      expect(signInTab).toHaveClass('bg-indigo-500');
     });
 
     it('should submit login form', () => {
@@ -183,8 +186,8 @@ describe('AuthPage', () => {
     it('should submit register form', () => {
       render(<AuthPage />);
 
-      const registerTabs = screen.getAllByRole('button', { name: 'Register' });
-      fireEvent.click(registerTabs[0]);
+      const signUpTab = screen.getByRole('button', { name: 'Sign Up' });
+      fireEvent.click(signUpTab);
 
       const form = document.querySelector('form')!;
       fireEvent.change(form.querySelector('input[name="email"]')!, { target: { value: 'new@test.com' } });
@@ -236,7 +239,7 @@ describe('AuthPage', () => {
 
       render(<AuthPage />);
 
-      fireEvent.click(screen.getByRole('button', { name: 'Register' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
 
       expect(screen.getByText('Email already exists')).toBeInTheDocument();
     });
@@ -249,7 +252,7 @@ describe('AuthPage', () => {
 
       render(<AuthPage />);
 
-      expect(screen.getByRole('button', { name: /logging in/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /signing in/i })).toBeDisabled();
     });
 
     it('should show pending state during register', () => {
@@ -260,16 +263,16 @@ describe('AuthPage', () => {
 
       render(<AuthPage />);
 
-      fireEvent.click(screen.getByRole('button', { name: 'Register' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
 
-      expect(screen.getByRole('button', { name: /registering/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /creating account/i })).toBeDisabled();
     });
 
     it('should handle empty name in register form', () => {
       render(<AuthPage />);
 
-      const registerTabs = screen.getAllByRole('button', { name: 'Register' });
-      fireEvent.click(registerTabs[0]);
+      const signUpTab = screen.getByRole('button', { name: 'Sign Up' });
+      fireEvent.click(signUpTab);
 
       const form = document.querySelector('form')!;
       fireEvent.change(form.querySelector('input[name="email"]')!, { target: { value: 'new@test.com' } });

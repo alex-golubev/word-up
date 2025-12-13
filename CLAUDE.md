@@ -15,6 +15,7 @@ npm run start        # Run production server
 npm run lint         # Run ESLint
 npm run typecheck    # Run TypeScript type checking
 npm run format       # Auto-format with Prettier
+npm run format:check # Check formatting without modifying files
 npm run test         # Run all tests with Jest
 npm run test -- path/to/file.spec.ts  # Run a single test file
 ```
@@ -89,7 +90,13 @@ type AppError =
   | { readonly _tag: 'NotFound'; readonly entity: string; readonly id: string }
   | { readonly _tag: 'InsertFailed'; readonly entity: string; readonly cause?: unknown }
   | { readonly _tag: 'ValidationError'; readonly message: string }
-  | { readonly _tag: 'DbError'; readonly cause: unknown };
+  | { readonly _tag: 'DbError'; readonly cause: unknown }
+  | { readonly _tag: 'AiError'; readonly message: string; readonly cause?: unknown }
+  | { readonly _tag: 'InvalidCredentials' }
+  | { readonly _tag: 'EmailAlreadyExists'; readonly email: string }
+  | { readonly _tag: 'TokenExpired' }
+  | { readonly _tag: 'InvalidToken' }
+  | { readonly _tag: 'Unauthorized' };
 ```
 
 ### fp-ts TaskEither for Async Error Handling

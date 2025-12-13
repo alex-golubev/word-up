@@ -3,21 +3,22 @@ import { render, screen } from '@testing-library/react';
 import Home from '~/app/page';
 
 describe('Home', () => {
-  it('should render the title', () => {
+  it('should render the hero heading', () => {
     render(<Home />);
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Word Up');
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 
   it('should render the description', () => {
     render(<Home />);
 
-    expect(screen.getByText('Practice languages through conversations')).toBeInTheDocument();
+    expect(screen.getByText('Learn at your own pace, with lifetime access on mobile and desktop')).toBeInTheDocument();
   });
 
-  it('should render coming soon badge', () => {
+  it('should render the get started button', () => {
     render(<Home />);
 
-    expect(screen.getByText('Coming soon')).toBeInTheDocument();
+    const getStartedLinks = screen.getAllByRole('link', { name: 'Get started' });
+    expect(getStartedLinks.length).toBeGreaterThan(0);
   });
 });

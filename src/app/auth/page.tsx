@@ -1,12 +1,54 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
+import { Button, Input, Select } from '~/presentation/components/ui';
 import { trpc, useAuth } from '~/presentation/hooks';
 
 import type { FormEvent } from 'react';
 
 type Tab = 'login' | 'register';
+
+function Logo() {
+  return (
+    <Link href="/" className="mb-8 flex items-center justify-center gap-2">
+      <div className="flex h-8 w-8 items-center justify-center">
+        <svg viewBox="0 0 32 32" fill="none" className="h-6 w-6">
+          <path d="M8 8L16 24L24 8" stroke="#6366F1" strokeWidth="3" strokeLinecap="round" />
+          <path d="M12 8L16 16L20 8" stroke="#F97316" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <span className="text-xl font-semibold text-zinc-900">Word Up</span>
+    </Link>
+  );
+}
+
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 rounded-full px-6 py-3 text-base font-medium transition-colors ${
+        active ? 'bg-indigo-500 text-white' : 'text-zinc-500 hover:text-zinc-900'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <label className="block pl-4 text-sm font-medium text-zinc-600">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function ErrorMessage({ message }: { message: string }) {
+  return <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{message}</div>;
+}
 
 export default function AuthPage() {
   const [tab, setTab] = useState<Tab>('login');
@@ -46,154 +88,132 @@ export default function AuthPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <p className="text-zinc-500">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#FFF5F1] via-white to-indigo-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
       </div>
     );
   }
 
   if (user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-4 dark:bg-zinc-950">
-        <div className="w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Welcome!</h1>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#FFF5F1] via-white to-indigo-50 p-4">
+        <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-xl">
+          <Logo />
 
-          <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <p>
-              <span className="font-medium">ID:</span> {user.id}
-            </p>
-            <p>
-              <span className="font-medium">Email:</span> {user.email}
-            </p>
-            <p>
-              <span className="font-medium">Name:</span> {user.name || '—'}
-            </p>
-            <p>
-              <span className="font-medium">Language:</span> {user.nativeLanguage}
-            </p>
-            <p>
-              <span className="font-medium">Created:</span> {new Date(user.createdAt).toLocaleString()}
-            </p>
+          <h1 className="mb-6 text-center text-2xl font-semibold text-zinc-900">Welcome back!</h1>
+
+          <div className="mb-8 space-y-3 rounded-2xl bg-zinc-50 p-4">
+            <div className="flex justify-between">
+              <span className="text-sm text-zinc-500">Email</span>
+              <span className="text-sm font-medium text-zinc-900">{user.email}</span>
+            </div>
+            {user.name && (
+              <div className="flex justify-between">
+                <span className="text-sm text-zinc-500">Name</span>
+                <span className="text-sm font-medium text-zinc-900">{user.name}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-sm text-zinc-500">Language</span>
+              <span className="text-sm font-medium text-zinc-900">{user.nativeLanguage.toUpperCase()}</span>
+            </div>
           </div>
 
-          <button
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-            className="w-full rounded bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
-          >
-            {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
-          </button>
+          <div className="space-y-3">
+            <Button href="/" size="small" className="w-full">
+              Go to Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={() => logoutMutation.mutate()}
+              state={logoutMutation.isPending ? 'loading' : 'default'}
+              className="w-full text-red-500 hover:text-red-600"
+            >
+              {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-4 dark:bg-zinc-950">
-      <div className="w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setTab('login')}
-            className={`flex-1 rounded px-4 py-2 text-sm font-medium transition ${
-              tab === 'login'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-            }`}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setTab('register')}
-            className={`flex-1 rounded px-4 py-2 text-sm font-medium transition ${
-              tab === 'register'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-            }`}
-          >
-            Register
-          </button>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#FFF5F1] via-white to-indigo-50 p-4">
+      <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-xl">
+        <Logo />
+
+        <div className="mb-8 flex gap-2 rounded-full bg-zinc-100 p-1">
+          <TabButton active={tab === 'login'} onClick={() => setTab('login')}>
+            Sign In
+          </TabButton>
+          <TabButton active={tab === 'register'} onClick={() => setTab('register')}>
+            Sign Up
+          </TabButton>
         </div>
 
         {tab === 'login' ? (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
-              <input
-                type="password"
-                name="password"
-                required
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
-            </div>
-            <button
+          <form onSubmit={handleLogin} className="space-y-5">
+            <FormField label="Email">
+              <Input type="email" name="email" placeholder="your@email.com" required size="small" />
+            </FormField>
+
+            <FormField label="Password">
+              <Input type="password" name="password" placeholder="Enter your password" required size="small" />
+            </FormField>
+
+            {loginMutation.error && <ErrorMessage message={loginMutation.error.message} />}
+
+            <Button
               type="submit"
-              disabled={loginMutation.isPending}
-              className="w-full rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              size="small"
+              state={loginMutation.isPending ? 'loading' : 'default'}
+              className="mt-6 w-full"
             >
-              {loginMutation.isPending ? 'Logging in...' : 'Login'}
-            </button>
-            {loginMutation.error && <p className="text-sm text-red-500">{loginMutation.error.message}</p>}
+              {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+            </Button>
           </form>
         ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
-              <input
+          <form onSubmit={handleRegister} className="space-y-5">
+            <FormField label="Email">
+              <Input type="email" name="email" placeholder="your@email.com" required size="small" />
+            </FormField>
+
+            <FormField label="Password">
+              <Input
                 type="password"
                 name="password"
+                placeholder="Minimum 8 characters"
                 required
                 minLength={8}
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                size="small"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Name (optional)</label>
-              <input
-                type="text"
-                name="name"
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Native Language</label>
-              <select
-                name="nativeLanguage"
-                required
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              >
+            </FormField>
+
+            <FormField label="Name (optional)">
+              <Input type="text" name="name" placeholder="Your name" size="small" />
+            </FormField>
+
+            <FormField label="Native Language">
+              <Select name="nativeLanguage" required size="small">
                 <option value="en">English</option>
                 <option value="ru">Russian</option>
                 <option value="es">Spanish</option>
                 <option value="fr">French</option>
                 <option value="de">German</option>
-              </select>
-            </div>
-            <button
+              </Select>
+            </FormField>
+
+            {registerMutation.error && <ErrorMessage message={registerMutation.error.message} />}
+
+            <Button
               type="submit"
-              disabled={registerMutation.isPending}
-              className="w-full rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              size="small"
+              state={registerMutation.isPending ? 'loading' : 'default'}
+              className="mt-6 w-full"
             >
-              {registerMutation.isPending ? 'Registering...' : 'Register'}
-            </button>
-            {registerMutation.error && <p className="text-sm text-red-500">{registerMutation.error.message}</p>}
+              {registerMutation.isPending ? 'Creating account...' : 'Create Account'}
+            </Button>
           </form>
         )}
       </div>
